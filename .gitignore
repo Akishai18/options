@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Node (for apps/web later)
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Env files — only .env.example is tracked
+.env
+.env.*
+!.env.example
+
+# OHLCV cache (per plan §8: parquet files live on the Fly volume / local disk, not in git)
+data/
+
+IMPLEMENTATION_PLAN.MD
+stratlab_project_overview.md

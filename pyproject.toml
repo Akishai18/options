@@ -1,0 +1,29 @@
+[project]
+name = "stratlab-monorepo"
+version = "0.0.0"
+description = "StratLab — conversational quant research workbench (monorepo root)"
+requires-python = ">=3.13"
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+stratlab-schema = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.7",
+    "stratlab-schema",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+addopts = "-q"
