@@ -17,19 +17,20 @@ from stratlab_api.llm import LLMProvider
 from stratlab_api.llm.critique import format_critique_input
 from stratlab_api.routes.chat import get_llm_provider_dep
 from stratlab_api.schemas import CritiqueResponse
-from stratlab_api.storage import MemoryStore, get_store
+from stratlab_api.storage import get_store
+from stratlab_api.storage_protocol import Store
 
 router = APIRouter(prefix="/critique", tags=["critique"])
 
 UserDep = Annotated[str, Depends(current_user)]
-StoreDep = Annotated[MemoryStore, Depends(get_store)]
+StoreDep = Annotated[Store, Depends(get_store)]
 ProviderDep = Annotated[LLMProvider, Depends(get_llm_provider_dep)]
 
 
 def _resolve_critique_input(
     backtest_id: str,
     user_id: str,
-    store: MemoryStore,
+    store: Store,
 ) -> str:
     try:
         bt = store.get_backtest(user_id, backtest_id)

@@ -13,6 +13,11 @@ from stratlab_engine.overfitting.sensitivity import (
     SensitivityHalo,
     run_sensitivity,
 )
+from stratlab_engine.overfitting.walk_forward import (
+    WalkForwardFold,
+    WalkForwardReport,
+    run_walk_forward,
+)
 
 __all__ = [
     "CostStressPoint",
@@ -20,7 +25,10 @@ __all__ = [
     "RegimeBreakdown",
     "RegimeStat",
     "SensitivityHalo",
+    "WalkForwardFold",
+    "WalkForwardReport",
     "compute_regimes",
     "run_cost_stress",
     "run_sensitivity",
+    "run_walk_forward",
 ]

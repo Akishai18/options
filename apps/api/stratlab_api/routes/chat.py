@@ -22,12 +22,13 @@ from stratlab_api.schemas import (
     ChatTurnResponse,
     ParseStrategyResponse,
 )
-from stratlab_api.storage import MemoryStore, get_store
+from stratlab_api.storage import get_store
+from stratlab_api.storage_protocol import Store
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 UserDep = Annotated[str, Depends(current_user)]
-StoreDep = Annotated[MemoryStore, Depends(get_store)]
+StoreDep = Annotated[Store, Depends(get_store)]
 
 
 def get_llm_provider_dep(
@@ -201,7 +202,7 @@ async def list_chat_messages(
 
 
 def _load_context(
-    store: MemoryStore, user_id: str, strategy_id: str | None,
+    store: Store, user_id: str, strategy_id: str | None,
 ) -> tuple[list[ParseTurn], "object | None"]:
     """Load the conversation history and the latest schema for an existing
     strategy. Returns ([], None) when starting a fresh thread."""
@@ -222,7 +223,7 @@ def _load_context(
 
 
 def _run_and_persist_backtest(
-    store: MemoryStore,
+    store: Store,
     user_id: str,
     strategy_id: str,
     version_id: str,

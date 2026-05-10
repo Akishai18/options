@@ -63,6 +63,23 @@ def format_critique_input(
         if rb.note:
             lines.append(f"  note: {rb.note}")
 
+    if result.walk_forward is not None:
+        wf = result.walk_forward
+        lines.append("")
+        lines.append(
+            f"Walk-forward (rolling out-of-sample, {wf.n_folds} folds, "
+            f"mean Sharpe={wf.mean_sharpe:+.2f}, stdev={wf.sharpe_stdev:.2f}, "
+            f"% positive folds={wf.pct_positive_sharpe:.0%}):"
+        )
+        for f in wf.folds:
+            lines.append(
+                f"  fold {f.index}  {f.start_ts[:10]} → {f.end_ts[:10]}  "
+                f"Sharpe={f.sharpe:+.2f}  Return={f.total_return:+.2%}  "
+                f"MaxDD={f.max_drawdown:+.2%}"
+            )
+        if wf.note:
+            lines.append(f"  note: {wf.note}")
+
     if result.sensitivity_halo is not None:
         halo = result.sensitivity_halo
         lines.append("")

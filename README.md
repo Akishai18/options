@@ -131,6 +131,14 @@ and free).
 
 ### Dev servers
 
+One command, both servers, prefixed logs:
+
+```bash
+./scripts/dev.sh
+```
+
+Or split across two terminals:
+
 ```bash
 # Terminal 1 — API at :8000
 uv run uvicorn stratlab_api.main:app --reload --port 8000
@@ -140,6 +148,29 @@ cd apps/web && pnpm dev
 ```
 
 Open http://localhost:3000.
+
+### Persistence
+
+By default (`STRATLAB_DEV_MODE=true`) the API uses an in-memory store —
+strategies and backtests reset on every restart, single user (`dev-user`).
+
+To turn on **persistent multi-user storage**:
+
+1. Open Supabase → **SQL Editor** and paste the contents of
+   `apps/api/migrations/001_initial_schema.sql`. Run.
+2. In `.env`, set:
+   ```
+   STRATLAB_DEV_MODE=false
+   STRATLAB_SUPABASE_URL=https://<project>.supabase.co
+   STRATLAB_SUPABASE_SERVICE_ROLE_KEY=<service role key>
+   STRATLAB_SUPABASE_JWT_SECRET=<JWT secret>
+   NEXT_PUBLIC_SUPABASE_URL=<same URL>
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
+   ```
+3. In **Supabase → Auth → URL Configuration**, add `http://localhost:3000`
+   to Site URL and `http://localhost:3000/auth/callback` to Redirect URLs.
+4. Restart `./scripts/dev.sh`. Visit localhost:3000 → bounced to `/sign-in` →
+   sign up with email → use the app. Strategies/backtests survive restarts.
 
 ## Tests + lint
 

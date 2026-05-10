@@ -541,6 +541,57 @@ def test_sensitivity_halo_caps_at_max_params(synthetic_uptrend):
     assert len(halo.skipped_paths) >= 2
 
 
+def test_walk_forward_produces_n_folds_with_disjoint_test_windows(synthetic_uptrend):
+    df = synthetic_uptrend
+    schema = _trivial_schema(df, exit=None,
+                             risk=RiskRules(stop_loss_pct=0.99),
+                             sizing=Sizing(mode="fixed_fraction", fraction=0.5),
+                             costs=Costs(fee_bps=0, slippage_bps=0))
+    result = run_backtest(schema, df)
+    wf = result.walk_forward
+    assert wf is not None
+    assert wf.n_folds == 5
+    assert len(wf.folds) == 5
+    # Test windows must be strictly forward-rolling and disjoint.
+    for prev, cur in zip(wf.folds[:-1], wf.folds[1:], strict=True):
+        assert cur.test_start >= prev.test_end, (
+            f"fold {cur.index} test starts at {cur.test_start} before "
+            f"fold {prev.index} test ends at {prev.test_end}"
+        )
+    # Aggregate stats are well-formed.
+    assert -10 < wf.mean_sharpe < 10
+    assert 0.0 <= wf.pct_positive_sharpe <= 1.0
+    assert wf.sharpe_stdev >= 0
+
+
+def test_walk_forward_skipped_for_too_few_bars():
+    """A 50-bar dataset is too short to fit 5 meaningful folds → None."""
+    df = _flat_ohlcv(np.linspace(100, 110, 50))
+    schema = _trivial_schema(df, exit=None,
+                             risk=RiskRules(stop_loss_pct=0.99),
+                             costs=Costs(fee_bps=0, slippage_bps=0))
+    result = run_backtest(schema, df)
+    assert result.walk_forward is None
+
+
+def test_walk_forward_pct_positive_high_for_monotone_uptrend():
+    """Buy-and-hold on a monotone uptrend should be positive in every fold."""
+    n = 600
+    closes = np.linspace(100, 300, n)
+    df = _flat_ohlcv(closes)
+    schema = _trivial_schema(df, exit=None,
+                             risk=RiskRules(stop_loss_pct=0.99),
+                             sizing=Sizing(mode="fixed_fraction", fraction=0.99),
+                             costs=Costs(fee_bps=0, slippage_bps=0))
+    result = run_backtest(schema, df)
+    wf = result.walk_forward
+    assert wf is not None
+    assert wf.pct_positive_sharpe >= 0.6, (
+        f"buy-and-hold on a steady uptrend should win most folds; got "
+        f"{wf.pct_positive_sharpe:.0%}"
+    )
+
+
 def test_regime_breakdown_skipped_for_short_test_window():
     """A 50-bar dataset → test split too small → regime_breakdown is None."""
     df = _flat_ohlcv(np.linspace(100, 110, 50))

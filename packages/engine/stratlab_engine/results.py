@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict
 from stratlab_engine.overfitting.cost_stress import CostStressPoint
 from stratlab_engine.overfitting.regime import RegimeBreakdown
 from stratlab_engine.overfitting.sensitivity import SensitivityHalo
+from stratlab_engine.overfitting.walk_forward import WalkForwardReport
 
 
 class TradeRecord(BaseModel):
@@ -72,6 +73,7 @@ class BacktestResult(BaseModel):
     cost_stress: list[CostStressPoint] = []
     regime_breakdown: RegimeBreakdown | None = None
     sensitivity_halo: SensitivityHalo | None = None
+    walk_forward: WalkForwardReport | None = None
 
     # Provenance + reproducibility.
     data_start: datetime

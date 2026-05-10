@@ -56,10 +56,14 @@ def _fresh_app(
     monkeypatch.setenv("STRATLAB_DEV_MODE", "true" if dev_mode else "false")
     monkeypatch.setenv("STRATLAB_SUPABASE_JWT_SECRET", jwt_secret)
     monkeypatch.setenv("STRATLAB_SENTRY_DSN_BACKEND", "")  # never ship test errors to Sentry
+    # Suppress any real Supabase config that might leak in from the user's .env;
+    # tests always run against MemoryStore.
+    monkeypatch.setenv("STRATLAB_SUPABASE_URL", "")
+    monkeypatch.setenv("STRATLAB_SUPABASE_SERVICE_ROLE_KEY", "")
     from stratlab_api import config, storage
     from stratlab_api.main import create_app
     config._cached = None
-    storage._store = None
+    storage._store = storage.MemoryStore()
     return TestClient(create_app())
 
 

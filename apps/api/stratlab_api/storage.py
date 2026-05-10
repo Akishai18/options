@@ -1,65 +1,54 @@
-"""In-memory storage for V1 local. Will be replaced by Supabase repositories
-in the M2 external half. The interface is deliberately small so the swap is
-contained.
+"""Storage facade.
+
+Two backends share one Protocol (storage_protocol.Store):
+
+  - MemoryStore (this file)  — in-process, single user, dev mode
+  - SupabaseStore (storage_supabase.py) — persistent, multi-user, prod
+
+`get_store()` dispatches based on settings:
+  - dev_mode=true       → MemoryStore
+  - dev_mode=false      → SupabaseStore (raises if Supabase env not set)
+
+Routes import only this module; they never know which backend is active.
 """
 
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Literal
 
 from stratlab_engine.results import BacktestResult
 from stratlab_schema import StrategySchema
+
+from stratlab_api.storage_protocol import Store
+from stratlab_api.storage_types import (
+    BacktestRecord,
+    ChatMessage,
+    StrategyRecord,
+    StrategyVersion,
+)
+
+# Re-export the dataclasses so existing callers `from stratlab_api.storage import StrategyRecord`
+# keep working.
+__all__ = [
+    "BacktestRecord",
+    "ChatMessage",
+    "MemoryStore",
+    "Store",
+    "StrategyRecord",
+    "StrategyVersion",
+    "get_store",
+    "reset_store",
+]
 
 
 def _new_id() -> str:
     return str(uuid.uuid4())
 
 
-@dataclass
-class StrategyVersion:
-    id: str
-    schema_obj: StrategySchema
-    created_at: datetime
-
-
-@dataclass
-class StrategyRecord:
-    id: str
-    user_id: str
-    name: str
-    versions: list[StrategyVersion]
-    created_at: datetime
-
-    @property
-    def latest_version(self) -> StrategyVersion:
-        return self.versions[-1]
-
-
-@dataclass
-class ChatMessage:
-    """One conversation turn within a strategy thread."""
-
-    role: Literal["user", "assistant"]
-    content: str
-    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-
-
-@dataclass
-class BacktestRecord:
-    id: str
-    user_id: str
-    strategy_id: str
-    version_id: str
-    status: Literal["queued", "running", "completed", "failed"]
-    result: BacktestResult | None = None
-    error: str | None = None
-    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-
-
 class MemoryStore:
+    """In-process store. Volatile — state vanishes on restart."""
+
     def __init__(self) -> None:
         self._strategies: dict[str, StrategyRecord] = {}
         self._backtests: dict[str, BacktestRecord] = {}
@@ -126,10 +115,21 @@ class MemoryStore:
             raise KeyError(backtest_id)
         return rec
 
-    def update_backtest(self, backtest_id: str, **fields) -> None:
+    def update_backtest(
+        self,
+        backtest_id: str,
+        *,
+        status: str | None = None,
+        result: BacktestResult | None = None,
+        error: str | None = None,
+    ) -> None:
         rec = self._backtests[backtest_id]
-        for k, v in fields.items():
-            setattr(rec, k, v)
+        if status is not None:
+            rec.status = status  # type: ignore[assignment]
+        if result is not None:
+            rec.result = result
+        if error is not None:
+            rec.error = error
 
     # ---- chat ---------------------------------------------------------------
 
@@ -144,17 +144,38 @@ class MemoryStore:
         return list(self._chats.get((user_id, strategy_id), []))
 
 
-_store: MemoryStore | None = None
+_store: Store | None = None
 
 
-def get_store() -> MemoryStore:
+def get_store() -> Store:
+    """Return the active store (memoized).
+
+    Construction is lazy so test fixtures can monkeypatch env vars before the
+    first call. Reset via `reset_store()`.
+    """
     global _store
     if _store is None:
-        _store = MemoryStore()
+        _store = _build_store()
     return _store
 
 
+def _build_store() -> Store:
+    from stratlab_api.config import get_settings
+
+    settings = get_settings()
+    if settings.dev_mode:
+        return MemoryStore()
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise RuntimeError(
+            "dev_mode=false requires STRATLAB_SUPABASE_URL and "
+            "STRATLAB_SUPABASE_SERVICE_ROLE_KEY to be set."
+        )
+    # Lazy import to keep MemoryStore-only deployments from importing supabase.
+    from stratlab_api.storage_supabase import SupabaseStore
+    return SupabaseStore(settings.supabase_url, settings.supabase_service_role_key)
+
+
 def reset_store() -> None:
-    """Test helper: drop the in-memory state."""
+    """Test helper: drop the cached store so the next call rebuilds."""
     global _store
     _store = None

@@ -47,13 +47,15 @@ def _fresh_app_with_mock(monkeypatch):
     monkeypatch.setenv("STRATLAB_DEV_MODE", "true")
     monkeypatch.setenv("STRATLAB_GEMINI_API_KEY", "fake-key-for-tests")
     monkeypatch.setenv("STRATLAB_SENTRY_DSN_BACKEND", "")  # disable Sentry in tests
+    monkeypatch.setenv("STRATLAB_SUPABASE_URL", "")
+    monkeypatch.setenv("STRATLAB_SUPABASE_SERVICE_ROLE_KEY", "")
     from stratlab_api import config, storage
     from stratlab_api.llm.providers.mock import MockProvider
     from stratlab_api.main import create_app
     from stratlab_api.routes.chat import get_llm_provider_dep
 
     config._cached = None
-    storage._store = None
+    storage._store = storage.MemoryStore()
     app = create_app()
 
     mock = MockProvider()

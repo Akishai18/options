@@ -15,14 +15,15 @@ from stratlab_api.schemas import (
     BacktestStatusResponse,
     CreateBacktestRequest,
 )
-from stratlab_api.storage import MemoryStore, get_store
+from stratlab_api.storage import get_store
+from stratlab_api.storage_protocol import Store
 
 router = APIRouter(prefix="/backtests", tags=["backtests"])
 
 MIN_BARS_FOR_BACKTEST = 30
 
 UserDep = Annotated[str, Depends(current_user)]
-StoreDep = Annotated[MemoryStore, Depends(get_store)]
+StoreDep = Annotated[Store, Depends(get_store)]
 
 
 @router.post("", response_model=BacktestStatusResponse)

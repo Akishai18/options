@@ -78,6 +78,30 @@ export type SensitivityHalo = {
   perturbations: PerturbationStat[];
 };
 
+export type WalkForwardFold = {
+  index: number;
+  train_start: number;
+  train_end: number;
+  test_start: number;
+  test_end: number;
+  bars: number;
+  sharpe: number;
+  total_return: number;
+  max_drawdown: number;
+  start_ts: string;
+  end_ts: string;
+};
+
+export type WalkForwardReport = {
+  n_folds: number;
+  folds: WalkForwardFold[];
+  mean_sharpe: number;
+  median_sharpe: number;
+  sharpe_stdev: number;
+  pct_positive_sharpe: number;
+  note: string;
+};
+
 export type BacktestResult = {
   schema_name: string;
   schema_hash: string;
@@ -94,6 +118,7 @@ export type BacktestResult = {
   cost_stress: CostStressPoint[];
   regime_breakdown: RegimeBreakdown | null;
   sensitivity_halo: SensitivityHalo | null;
+  walk_forward: WalkForwardReport | null;
   data_start: string;
   data_end: string;
   bars: number;

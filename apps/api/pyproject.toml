@@ -12,6 +12,7 @@ dependencies = [
     "pyjwt>=2.10",
     "sentry-sdk[fastapi]>=2.0",
     "google-genai>=1.0",
+    "supabase>=2.9",
 ]
 
 [build-system]

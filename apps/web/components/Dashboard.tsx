@@ -9,6 +9,7 @@ import { CostStressChart } from "./CostStressChart";
 import { RegimeBreakdownGrid } from "./RegimeBreakdownGrid";
 import { SectionLabel } from "./SectionLabel";
 import { SensitivityHaloChart } from "./SensitivityHaloChart";
+import { WalkForwardChart } from "./WalkForwardChart";
 import { EmptyDashboard } from "./EmptyDashboard";
 import { TradesTable } from "./TradesTable";
 import type { BacktestResult } from "@/lib/types";
@@ -110,6 +111,7 @@ export function Dashboard({
         {result.cost_stress.length > 0 && (
           <CostStressChart points={result.cost_stress} />
         )}
+        {result.walk_forward && <WalkForwardChart report={result.walk_forward} />}
         {result.regime_breakdown && (
           <RegimeBreakdownGrid regime={result.regime_breakdown} />
         )}

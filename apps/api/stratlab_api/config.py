@@ -37,6 +37,16 @@ class Settings(BaseSettings):
     sentry_dsn_backend: str | None = None
     """Sentry DSN for backend error capture. If unset, Sentry init is skipped."""
 
+    supabase_url: str | None = None
+    """Supabase project URL. Required when dev_mode=false."""
+
+    supabase_service_role_key: str | None = None
+    """Service-role key for server-side Postgres access via supabase-py.
+
+    Bypasses RLS — every query in SupabaseStore filters by user_id explicitly.
+    RLS policies are defense-in-depth (see migrations/001_initial_schema.sql).
+    """
+
     gemini_api_key: str | None = None
     """Google AI Studio API key (free tier). Required for chat / critique routes."""
 

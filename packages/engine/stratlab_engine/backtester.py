@@ -24,6 +24,7 @@ from stratlab_engine.data.universe import periods_per_year
 from stratlab_engine.overfitting.cost_stress import run_cost_stress
 from stratlab_engine.overfitting.regime import compute_regimes
 from stratlab_engine.overfitting.sensitivity import run_sensitivity
+from stratlab_engine.overfitting.walk_forward import run_walk_forward
 from stratlab_engine.results import BacktestResult, MetricsBlock, TradeRecord
 from stratlab_engine.splits import compute_metrics, split_indices
 
@@ -71,10 +72,12 @@ def run_backtest(
     cost_stress = []
     regime_breakdown = None
     sensitivity_halo = None
+    walk_forward = None
     if not _skip_overfitting:
         cost_stress = run_cost_stress(schema, df)
         regime_breakdown = compute_regimes(equity, df["close"], schema.data.timeframe, s_test)
         sensitivity_halo = run_sensitivity(schema, df, equity, metrics_test, s_test)
+        walk_forward = run_walk_forward(equity, schema.data.timeframe)
 
     return BacktestResult(
         schema_name=schema.name,
@@ -96,6 +99,7 @@ def run_backtest(
         cost_stress=cost_stress,
         regime_breakdown=regime_breakdown,
         sensitivity_halo=sensitivity_halo,
+        walk_forward=walk_forward,
         data_start=df.index[0].to_pydatetime(),
         data_end=df.index[-1].to_pydatetime(),
         bars=n,
