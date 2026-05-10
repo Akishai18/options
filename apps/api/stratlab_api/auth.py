@@ -1,9 +1,9 @@
 """JWT verification + the `current_user` FastAPI dependency.
 
 In dev_mode (default for local development), missing/invalid auth gets mapped
-to a fixed `dev-user`. In prod, HS256 verification against `jwt_secret` is
-strictly enforced and the JWT's `sub` claim becomes the user id — this matches
-what Supabase Auth produces.
+to a fixed `dev-user`. In prod, HS256 verification against `supabase_jwt_secret`
+is strictly enforced and the JWT's `sub` claim becomes the user id — this
+matches what Supabase Auth produces.
 """
 
 from typing import Annotated
@@ -27,7 +27,7 @@ async def current_user(
             token = authorization.removeprefix("Bearer ")
             try:
                 payload = jwt.decode(
-                    token, settings.jwt_secret, algorithms=["HS256"],
+                    token, settings.supabase_jwt_secret, algorithms=["HS256"],
                     options={"verify_aud": False},
                 )
                 return str(payload.get("sub", DEV_USER_ID))
@@ -43,7 +43,7 @@ async def current_user(
     token = authorization.removeprefix("Bearer ")
     try:
         payload = jwt.decode(
-            token, settings.jwt_secret, algorithms=["HS256"],
+            token, settings.supabase_jwt_secret, algorithms=["HS256"],
             options={"verify_aud": False},
         )
     except jwt.PyJWTError as e:

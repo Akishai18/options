@@ -35,7 +35,13 @@ export function Topbar({
 
   return (
     <header className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/70 backdrop-blur">
-      <div className="flex h-14 items-center gap-5 px-7">
+      <div className="flex h-14 items-center gap-3 px-4 md:gap-5 md:px-7">
+        {/* mobile wordmark — sidebar is hidden, so brand lives here */}
+        <span className="md:hidden font-mono text-[12px] font-medium tracking-[0.2em] text-[var(--color-fg)]">
+          STRATLAB
+        </span>
+        <span className="md:hidden h-4 w-px bg-[var(--color-border)]" />
+
         {/* contextual title */}
         <motion.div
           key={view}
@@ -44,17 +50,17 @@ export function Topbar({
           transition={{ duration: 0.2 }}
           className="flex items-baseline gap-2.5"
         >
-          <span className="eyebrow">{ctx.eyebrow}</span>
+          <span className="eyebrow hidden sm:inline">{ctx.eyebrow}</span>
           <span className="serif-italic text-[15px] text-[var(--color-fg)]">
             {ctx.title}
           </span>
         </motion.div>
 
-        {/* breadcrumb */}
+        {/* breadcrumb — hidden on mobile to save horizontal room */}
         {strategyName && (
           <>
-            <span className="h-4 w-px bg-[var(--color-border)]" />
-            <div className="flex min-w-0 items-center gap-2 font-mono text-[12px] text-[var(--color-fg-muted)]">
+            <span className="hidden md:inline h-4 w-px bg-[var(--color-border)]" />
+            <div className="hidden md:flex min-w-0 items-center gap-2 font-mono text-[12px] text-[var(--color-fg-muted)]">
               <span className="truncate text-[var(--color-fg)]">{strategyName}</span>
               {versionLabel && (
                 <>

@@ -229,6 +229,39 @@ def test_critique_404_for_unknown_backtest(monkeypatch):
     assert r.status_code == 404
 
 
+def test_critique_stream_emits_sse_events(monkeypatch):
+    client, mock = _fresh_app_with_mock(monkeypatch)
+    schema = _example_schema()
+    mock.queue_parse_strategy(schema, "built it")
+    turn_r = client.post("/api/v1/chat/turn", json={"message": "MA cross BTC"})
+    if turn_r.json().get("backtest", {}).get("status") != "completed":
+        pytest.skip("backfill missing")
+    bt_id = turn_r.json()["backtest_id"]
+
+    mock.queue_critique("Sharpe held up out-of-sample. Try widening the stop?")
+    with client.stream("GET", f"/api/v1/critique/{bt_id}/stream") as r:
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("text/event-stream")
+        body = b"".join(r.iter_bytes()).decode()
+
+    # SSE wire format: each event has `event:` and `data:` lines, blank-line separated.
+    assert "event: token" in body
+    assert "event: done" in body
+    # The streamed text reassembles back to the queued critique (modulo the
+    # trailing space MockProvider adds between tokens).
+    import json as _json
+    chunks: list[str] = []
+    for block in body.split("\n\n"):
+        if "event: token" not in block:
+            continue
+        for line in block.split("\n"):
+            if line.startswith("data: "):
+                chunks.append(_json.loads(line[6:])["text"])
+    reconstructed = "".join(chunks).strip()
+    assert "Sharpe" in reconstructed
+    assert "out-of-sample" in reconstructed
+
+
 # ---- provider factory ------------------------------------------------------
 
 

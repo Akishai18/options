@@ -102,7 +102,7 @@ export function CodeView({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="space-y-5 px-7 pt-6">
+      <div className="space-y-5 px-4 pt-5 md:px-7 md:pt-6">
         <motion.div
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
@@ -150,7 +150,7 @@ export function CodeView({
         </motion.div>
       </div>
 
-      <div className="flex-1 overflow-hidden px-7 pb-8 pt-5">
+      <div className="flex-1 overflow-hidden px-4 pb-6 pt-4 md:px-7 md:pb-8 md:pt-5">
         <div className="flex h-full flex-col">
           {/* file tabs */}
           <div className="flex items-end gap-1 border-b border-[var(--color-border)]">

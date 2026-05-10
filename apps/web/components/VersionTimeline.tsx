@@ -40,7 +40,7 @@ export function VersionTimeline({
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32 }}
-      className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/70 px-7 py-3 backdrop-blur"
+      className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/70 px-4 py-3 backdrop-blur md:px-7"
     >
       <div className="mb-2 flex items-baseline justify-between">
         <span className="eyebrow">version history</span>

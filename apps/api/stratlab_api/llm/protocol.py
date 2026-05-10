@@ -4,6 +4,7 @@ The protocol exists so providers (Gemini today, Anthropic later, mock for tests)
 share one calling surface. Adding a new provider = one new file in providers/.
 """
 
+from collections.abc import AsyncIterator
 from typing import Literal, Protocol
 
 from pydantic import BaseModel
@@ -62,5 +63,13 @@ class LLMProvider(Protocol):
         `critique_input` is a structured-stats summary string (see
         `critique.format_critique_input`). Output: 4-8 sentences, grounded
         in the numbers, ending with one suggested next iteration as a question.
+        """
+        ...
+
+    def stream_critique(self, critique_input: str) -> AsyncIterator[str]:
+        """Same contract as generate_critique, but streams text chunks.
+
+        Defaults to one-shot if a provider doesn't override (the SSE endpoint
+        still works — it just yields a single chunk).
         """
         ...

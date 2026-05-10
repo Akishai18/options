@@ -19,8 +19,12 @@ class Settings(BaseSettings):
     dev_mode: bool = True
     """Bypass auth and use a fixed user_id when True. Production must set False."""
 
-    jwt_secret: str = "dev-secret-not-for-production"
-    """HS256 secret for verifying Supabase-issued JWTs (M2 external half)."""
+    supabase_jwt_secret: str = "dev-secret-not-for-production"
+    """HS256 secret for verifying Supabase-issued JWTs.
+
+    In Supabase: Settings → API → JWT Secret.
+    Sets via env var `STRATLAB_SUPABASE_JWT_SECRET`.
+    """
 
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
     """Allowed CORS origins. Default covers Next.js dev (3000) + this API (8000)."""

@@ -71,3 +71,13 @@ class MockProvider:
                 "MockProvider.generate_critique called but no response queued"
             )
         return self._critique_queue.popleft()
+
+    async def stream_critique(self, critique_input: str):
+        """Stream the queued critique by chunking on whitespace.
+
+        Lets streaming-flow tests assert on word-level chunks without needing
+        a real network round-trip.
+        """
+        text = await self.generate_critique(critique_input)
+        for token in text.split(" "):
+            yield token + " "

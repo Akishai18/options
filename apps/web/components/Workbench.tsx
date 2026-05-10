@@ -10,7 +10,8 @@ import { CodeView } from "./CodeView";
 import { LibraryView } from "./LibraryView";
 import { CompareView } from "./CompareView";
 import { VersionTimeline, type VersionEntry } from "./VersionTimeline";
-import { chatTurn, getCritique, ApiError } from "@/lib/api";
+import { chatTurn, streamCritique, ApiError } from "@/lib/api";
+import { parseCompareArgs, parseSlash, SLASH_SPECS } from "@/lib/slashCommands";
 import type { ChatMsg, StrategySchema } from "@/lib/types";
 
 type Status = "idle" | "thinking" | "running" | "critiquing" | "ready" | "error";
@@ -83,6 +84,82 @@ export function Workbench() {
 
   const handleSubmit = useCallback(
     async (text: string) => {
+      // Slash commands are intercepted client-side — never sent to the LLM.
+      const slash = parseSlash(text);
+      if (slash) {
+        setMessages((m) => [
+          ...m,
+          { id: newId(), role: "user", content: text },
+        ]);
+        const reply = (content: string) =>
+          setMessages((m) => [
+            ...m,
+            { id: newId(), role: "event", content },
+          ]);
+        switch (slash.kind) {
+          case "help": {
+            const lines = SLASH_SPECS.map(
+              (s) => `/${s.name}${s.args ? " " + s.args : ""} — ${s.hint}`,
+            ).join("\n");
+            setMessages((m) => [
+              ...m,
+              { id: newId(), role: "assistant", content: lines },
+            ]);
+            return;
+          }
+          case "results":
+            if (!activeVersion) {
+              reply("no results yet — describe a strategy first");
+              return;
+            }
+            goToView("results");
+            reply("opened results");
+            return;
+          case "chat":
+            goToView("chat");
+            return;
+          case "export":
+            if (!activeVersion) {
+              reply("no strategy to export — describe one first");
+              return;
+            }
+            goToView("code");
+            reply("opened code export");
+            return;
+          case "clear":
+            setMessages([]);
+            setVersions([]);
+            setActiveVersionId(null);
+            setCompareVersionId(null);
+            setCritiqueByVersion({});
+            setSchemaByVersion({});
+            setStrategyId(null);
+            setVersionCounter(0);
+            setStatus("idle");
+            return;
+          case "compare": {
+            const args = parseCompareArgs(slash.args);
+            if (!args) {
+              reply("usage: /compare v2 v3");
+              return;
+            }
+            const a = versions.find((v) => v.label === args[0]);
+            const b = versions.find((v) => v.label === args[1]);
+            if (!a || !b) {
+              reply(
+                `couldn't find ${[args[0], args[1]].filter((l) => !versions.find((v) => v.label === l)).join(" and ")}`,
+              );
+              return;
+            }
+            setActiveVersionId(a.id);
+            setCompareVersionId(b.id);
+            goToView("results");
+            reply(`comparing ${a.label} vs ${b.label}`);
+            return;
+          }
+        }
+      }
+
       setMessages((m) => [...m, { id: newId(), role: "user", content: text }]);
       setStatus("thinking");
 
@@ -172,20 +249,31 @@ export function Workbench() {
 
         setStatus("critiquing");
         setCritiqueLoadingFor(versionId);
-        try {
-          const crit = await getCritique(bt.backtest_id);
-          setCritiqueByVersion((c) => ({ ...c, [versionId]: crit.text }));
-          setStatus("ready");
-        } catch (e) {
-          const detail = e instanceof ApiError ? e.message : String(e);
-          setMessages((mm) => [
-            ...mm,
-            { id: newId(), role: "event", content: `critique failed — ${detail}` },
-          ]);
-          setStatus("ready");
-        } finally {
-          setCritiqueLoadingFor((id) => (id === versionId ? null : id));
-        }
+        // Stream the critique progressively. The dashboard's CritiqueCard
+        // reads from critiqueByVersion[versionId] and animates as text grows.
+        await new Promise<void>((resolve) => {
+          streamCritique(bt.backtest_id, {
+            onChunk: (text) =>
+              setCritiqueByVersion((c) => ({
+                ...c,
+                [versionId]: (c[versionId] ?? "") + text,
+              })),
+            onDone: () => {
+              setStatus("ready");
+              setCritiqueLoadingFor((id) => (id === versionId ? null : id));
+              resolve();
+            },
+            onError: (err) => {
+              setMessages((mm) => [
+                ...mm,
+                { id: newId(), role: "event", content: `critique failed — ${err}` },
+              ]);
+              setStatus("ready");
+              setCritiqueLoadingFor((id) => (id === versionId ? null : id));
+              resolve();
+            },
+          });
+        });
       } catch (e) {
         const detail = e instanceof ApiError ? e.message : String(e);
         setMessages((m) => [
@@ -195,7 +283,7 @@ export function Workbench() {
         setStatus("error");
       }
     },
-    [strategyId, versionCounter],
+    [strategyId, versionCounter, activeVersion, versions, goToView],
   );
 
   const isBusy = status === "thinking" || status === "running";
@@ -223,7 +311,7 @@ export function Workbench() {
         hasStrategy={!!activeVersion}
         status={status}
       />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden pb-[58px] md:pb-0">
         <Topbar
           view={view}
           strategyName={headerStrategyName}

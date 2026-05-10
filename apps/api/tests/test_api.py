@@ -54,7 +54,7 @@ def _fresh_app(
 ):
     """Create a TestClient against a freshly-constructed app with reset state."""
     monkeypatch.setenv("STRATLAB_DEV_MODE", "true" if dev_mode else "false")
-    monkeypatch.setenv("STRATLAB_JWT_SECRET", jwt_secret)
+    monkeypatch.setenv("STRATLAB_SUPABASE_JWT_SECRET", jwt_secret)
     monkeypatch.setenv("STRATLAB_SENTRY_DSN_BACKEND", "")  # never ship test errors to Sentry
     from stratlab_api import config, storage
     from stratlab_api.main import create_app

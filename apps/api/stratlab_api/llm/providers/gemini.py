@@ -116,6 +116,22 @@ class GeminiProvider:
         )
         return (response.text or "").strip()
 
+    async def stream_critique(self, critique_input: str):
+        """Yield critique text chunks as Gemini emits them."""
+        config = types.GenerateContentConfig(
+            system_instruction=CRITIQUE_SYSTEM_PROMPT,
+            temperature=0.3,
+        )
+        stream = await self._client.aio.models.generate_content_stream(
+            model=self._model_critique,
+            contents=[_user_part(critique_input)],
+            config=config,
+        )
+        async for chunk in stream:
+            text = chunk.text or ""
+            if text:
+                yield text
+
     # ---- helpers -----------------------------------------------------------
 
     def _build_parse_contents(

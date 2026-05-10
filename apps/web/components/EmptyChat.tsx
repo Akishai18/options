@@ -41,7 +41,7 @@ export function EmptyChat({ onPick }: Props) {
             a research workbench
           </span>
         </div>
-        <h1 className="text-[34px] leading-[1.1] tracking-[-0.015em] text-[var(--color-fg)]">
+        <h1 className="text-[26px] md:text-[34px] leading-[1.1] tracking-[-0.015em] text-[var(--color-fg)]">
           Describe a strategy.
           <br />
           <span className="serif-italic text-[var(--color-fg-muted)]">

@@ -28,7 +28,7 @@ export function ChatView({
   // Empty state: hero composer centered like ChatGPT/Claude landing.
   if (isEmpty) {
     return (
-      <div className="mx-auto flex h-full w-full max-w-[760px] flex-col px-6">
+      <div className="mx-auto flex h-full w-full max-w-[760px] flex-col px-4 md:px-6">
         <div className="flex flex-1 flex-col justify-center pt-6">
           <EmptyChat onPick={onSubmit} />
         </div>
@@ -54,7 +54,7 @@ export function ChatView({
           onViewResults={onViewResults}
         />
       </div>
-      <div className="border-t border-[var(--color-border)] bg-[var(--color-bg)]/85 px-6 py-4 backdrop-blur">
+      <div className="border-t border-[var(--color-border)] bg-[var(--color-bg)]/85 px-4 py-3 backdrop-blur md:px-6 md:py-4">
         <Composer
           onSubmit={onSubmit}
           disabled={busy}

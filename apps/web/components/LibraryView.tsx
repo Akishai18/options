@@ -142,7 +142,7 @@ const LOGICALS = [
 export function LibraryView() {
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <div className="space-y-7 px-7 py-6">
+      <div className="space-y-7 px-4 py-5 md:px-7 md:py-6">
         <motion.div
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
