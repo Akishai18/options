@@ -1,0 +1,157 @@
+@import "tailwindcss";
+
+/*  StratLab — research terminal palette                                  */
+/*  warm dark base · CRT-amber accent · finance-friendly green/red sparks */
+
+@theme {
+  /* surfaces — warm-tinted, not pure black */
+  --color-bg: oklch(0.145 0.005 60);
+  --color-surface: oklch(0.18 0.006 60);
+  --color-surface-2: oklch(0.21 0.006 60);
+  --color-surface-3: oklch(0.24 0.007 60);
+  --color-border: oklch(0.27 0.005 60);
+  --color-border-strong: oklch(0.34 0.005 60);
+
+  /* foreground */
+  --color-fg: oklch(0.93 0.005 60);
+  --color-fg-muted: oklch(0.66 0.005 60);
+  --color-fg-subtle: oklch(0.46 0.005 60);
+  --color-fg-faint: oklch(0.34 0.005 60);
+
+  /* sole accent — CRT phosphor warmth */
+  --color-accent: oklch(0.78 0.13 75);
+  --color-accent-strong: oklch(0.83 0.15 80);
+  --color-accent-soft: oklch(0.78 0.13 75 / 0.18);
+
+  /* finance signals */
+  --color-up: oklch(0.74 0.15 145);
+  --color-down: oklch(0.65 0.18 25);
+  --color-up-soft: oklch(0.74 0.15 145 / 0.15);
+  --color-down-soft: oklch(0.65 0.18 25 / 0.15);
+
+  /* fonts (next/font sets the actual face via CSS variables) */
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", monospace;
+  --font-serif: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+}
+
+* { border-color: var(--color-border); }
+
+html, body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "ss02", "cv01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* atmospheric backdrop — barely-there grid that fades from center  */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -2;
+  background-image:
+    linear-gradient(to right, oklch(0.22 0.005 60 / 0.5) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.22 0.005 60 / 0.5) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 0%, transparent 80%);
+          mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 0%, transparent 80%);
+}
+
+/* warm vignette glow at the top, like CRT bloom */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 70% 30% at 50% 0%, oklch(0.78 0.13 75 / 0.06), transparent 70%);
+}
+
+/* utility: tabular numerals — financial data needs columns to align */
+.tabular { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* small caps section labels — the magazine-y micro-headers */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-fg-muted);
+  font-weight: 500;
+}
+
+/* italic serif emphasis — sparing, deliberate */
+.serif-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
+/* focus rings — match the accent */
+:where(button, a, input, textarea, [role="button"]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* selection */
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-fg);
+}
+
+/* scrollbars (webkit) */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-fg-faint); }
+
+/* one-off keyframes  */
+@keyframes phosphor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.cursor-blink::after {
+  content: "▍";
+  margin-left: 0.1em;
+  color: var(--color-accent);
+  animation: phosphor-blink 1.05s steps(1, end) infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    var(--color-surface-2) 30%,
+    var(--color-surface) 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+/* recharts tweaks for our theme */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--color-border) !important;
+  stroke-dasharray: 2 4;
+}
+.recharts-text {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  fill: var(--color-fg-subtle) !important;
+}
+.recharts-tooltip-wrapper { outline: none !important; }

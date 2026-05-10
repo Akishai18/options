@@ -39,6 +39,15 @@ class StrategyRecord:
 
 
 @dataclass
+class ChatMessage:
+    """One conversation turn within a strategy thread."""
+
+    role: Literal["user", "assistant"]
+    content: str
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
+@dataclass
 class BacktestRecord:
     id: str
     user_id: str
@@ -54,6 +63,8 @@ class MemoryStore:
     def __init__(self) -> None:
         self._strategies: dict[str, StrategyRecord] = {}
         self._backtests: dict[str, BacktestRecord] = {}
+        # chat history is keyed by (user_id, strategy_id); list is chronological.
+        self._chats: dict[tuple[str, str], list[ChatMessage]] = {}
 
     # ---- strategies ---------------------------------------------------------
 
@@ -119,6 +130,18 @@ class MemoryStore:
         rec = self._backtests[backtest_id]
         for k, v in fields.items():
             setattr(rec, k, v)
+
+    # ---- chat ---------------------------------------------------------------
+
+    def add_chat_message(
+        self, user_id: str, strategy_id: str, role: str, content: str
+    ) -> ChatMessage:
+        msg = ChatMessage(role=role, content=content)  # type: ignore[arg-type]
+        self._chats.setdefault((user_id, strategy_id), []).append(msg)
+        return msg
+
+    def get_chat_history(self, user_id: str, strategy_id: str) -> list[ChatMessage]:
+        return list(self._chats.get((user_id, strategy_id), []))
 
 
 _store: MemoryStore | None = None

@@ -30,6 +30,26 @@ class Settings(BaseSettings):
 
     api_prefix: str = "/api/v1"
 
+    sentry_dsn_backend: str | None = None
+    """Sentry DSN for backend error capture. If unset, Sentry init is skipped."""
+
+    gemini_api_key: str | None = None
+    """Google AI Studio API key (free tier). Required for chat / critique routes."""
+
+    llm_provider: str = "gemini"
+    """Which LLM backend to use. Currently 'gemini'; 'anthropic' planned later."""
+
+    llm_model_parse: str = "gemini-2.5-flash"
+    """Model for natural-language → strategy schema parsing (cheap + fast)."""
+
+    llm_model_critique: str = "gemini-2.5-flash"
+    """Model for grounded critique generation.
+
+    Note: gemini-2.5-pro would give deeper reasoning but its free-tier quota
+    is currently 0 (Pro is paid-only). Override via STRATLAB_LLM_MODEL_CRITIQUE
+    if you upgrade to paid AI Studio billing.
+    """
+
 
 _cached: Settings | None = None
 

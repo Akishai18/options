@@ -29,6 +29,11 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
+[tool.ruff.lint.per-file-ignores]
+# prompts.py contains long natural-language few-shot examples and JSON literals;
+# breaking lines would hurt readability of the prompt itself.
+"apps/api/stratlab_api/llm/prompts.py" = ["E501"]
+
 [tool.pytest.ini_options]
 testpaths = ["packages", "apps"]
 addopts = "-q"

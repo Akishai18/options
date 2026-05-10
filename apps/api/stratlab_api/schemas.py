@@ -98,3 +98,54 @@ class IndicatorListResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
+
+
+# ---- chat -----------------------------------------------------------------
+
+
+class ChatTurnRequest(BaseModel):
+    """Send a chat message. If `strategy_id` is set, continue that thread;
+    otherwise start a fresh strategy."""
+
+    message: str
+    strategy_id: str | None = None
+
+
+class ChatMessageInfo(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+    created_at: datetime
+
+
+class ParseStrategyResponse(BaseModel):
+    """Result of /chat/parse — schema (or clarification) only, no backtest."""
+
+    mode: str  # "strategy" | "clarification"
+    strategy_id: str | None = None
+    version_id: str | None = None
+    strategy: StrategySchema | None = None
+    explanation: str = ""
+    clarification_question: str | None = None
+    missing_fields: list[str] = []
+
+
+class ChatTurnResponse(BaseModel):
+    """Result of /chat/turn — combined parse + backtest in one call."""
+
+    mode: str  # "strategy" | "clarification"
+    strategy_id: str | None = None
+    version_id: str | None = None
+    backtest_id: str | None = None
+    strategy: StrategySchema | None = None
+    explanation: str = ""
+    clarification_question: str | None = None
+    missing_fields: list[str] = []
+    backtest: BacktestStatusResponse | None = None
+
+
+# ---- critique --------------------------------------------------------------
+
+
+class CritiqueResponse(BaseModel):
+    backtest_id: str
+    text: str
