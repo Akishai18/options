@@ -32,6 +32,52 @@ export type TradeRecord = {
 
 export type EquityPoint = [string, number]; // [iso_ts, value]
 
+export type CostStressPoint = {
+  multiplier: number;
+  fee_bps: number;
+  sharpe: number;
+  total_return: number;
+  max_drawdown: number;
+  num_trades: number;
+};
+
+export type RegimeStat = {
+  label: "low_vol" | "high_vol" | "trending" | "sideways";
+  bars: number;
+  fraction: number;
+  sharpe: number;
+  mean_return: number;
+};
+
+export type RegimeBreakdown = {
+  low_vol: RegimeStat;
+  high_vol: RegimeStat;
+  trending: RegimeStat;
+  sideways: RegimeStat;
+  note: string;
+};
+
+export type PerturbationStat = {
+  path: string;
+  base_value: number;
+  low_value: number;
+  high_value: number;
+  base_sharpe: number;
+  low_sharpe: number;
+  high_sharpe: number;
+  sharpe_range: number;
+};
+
+export type SensitivityHalo = {
+  delta: number;
+  perturbed_paths: string[];
+  skipped_paths: string[];
+  envelope_lo: EquityPoint[];
+  envelope_hi: EquityPoint[];
+  median_width: number;
+  perturbations: PerturbationStat[];
+};
+
 export type BacktestResult = {
   schema_name: string;
   schema_hash: string;
@@ -45,6 +91,9 @@ export type BacktestResult = {
   metrics_val: MetricsBlock | null;
   metrics_test: MetricsBlock | null;
   metrics_benchmark_full: MetricsBlock;
+  cost_stress: CostStressPoint[];
+  regime_breakdown: RegimeBreakdown | null;
+  sensitivity_halo: SensitivityHalo | null;
   data_start: string;
   data_end: string;
   bars: number;

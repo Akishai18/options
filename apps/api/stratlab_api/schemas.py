@@ -46,6 +46,14 @@ class StrategyDetail(BaseModel):
     versions: list[StrategyVersionInfo]
 
 
+class ExportBundleResponse(BaseModel):
+    """Bundled files for a runnable Python export of one strategy version."""
+
+    strategy_id: str
+    version_id: str
+    files: dict[str, str]   # filename → contents
+
+
 # ---- backtests -------------------------------------------------------------
 
 

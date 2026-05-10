@@ -21,6 +21,9 @@ from stratlab_schema import Side, StrategySchema
 
 from stratlab_engine.compiler import SignalSpec, compile_strategy
 from stratlab_engine.data.universe import periods_per_year
+from stratlab_engine.overfitting.cost_stress import run_cost_stress
+from stratlab_engine.overfitting.regime import compute_regimes
+from stratlab_engine.overfitting.sensitivity import run_sensitivity
 from stratlab_engine.results import BacktestResult, MetricsBlock, TradeRecord
 from stratlab_engine.splits import compute_metrics, split_indices
 
@@ -30,11 +33,19 @@ from stratlab_engine.splits import compute_metrics, split_indices
 VOL_LOOKBACK_BARS = 30
 
 
-def run_backtest(schema: StrategySchema, df: pd.DataFrame) -> BacktestResult:
+def run_backtest(
+    schema: StrategySchema,
+    df: pd.DataFrame,
+    *,
+    _skip_overfitting: bool = False,
+) -> BacktestResult:
     """Run a backtest of `schema` against the provided OHLCV `df`.
 
     `df` must already be sliced to schema.data.start..end and have a
     tz-aware DatetimeIndex with columns [open, high, low, close, volume].
+
+    `_skip_overfitting` is a private flag used by the cost_stress reruns
+    so they don't recurse into more cost-stress passes.
     """
     if df.empty:
         raise ValueError("OHLCV DataFrame is empty")
@@ -57,6 +68,14 @@ def run_backtest(schema: StrategySchema, df: pd.DataFrame) -> BacktestResult:
     metrics_val = _split_metrics("val", equity, trades, in_position, s_val, schema)
     metrics_test = _split_metrics("test", equity, trades, in_position, s_test, schema)
 
+    cost_stress = []
+    regime_breakdown = None
+    sensitivity_halo = None
+    if not _skip_overfitting:
+        cost_stress = run_cost_stress(schema, df)
+        regime_breakdown = compute_regimes(equity, df["close"], schema.data.timeframe, s_test)
+        sensitivity_halo = run_sensitivity(schema, df, equity, metrics_test, s_test)
+
     return BacktestResult(
         schema_name=schema.name,
         schema_hash=_schema_hash(schema),
@@ -74,6 +93,9 @@ def run_backtest(schema: StrategySchema, df: pd.DataFrame) -> BacktestResult:
         metrics_val=metrics_val,
         metrics_test=metrics_test,
         metrics_benchmark_full=metrics_benchmark,
+        cost_stress=cost_stress,
+        regime_breakdown=regime_breakdown,
+        sensitivity_halo=sensitivity_halo,
         data_start=df.index[0].to_pydatetime(),
         data_end=df.index[-1].to_pydatetime(),
         bars=n,

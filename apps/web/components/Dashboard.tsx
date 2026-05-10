@@ -5,8 +5,12 @@ import { MetricsStrip } from "./MetricsStrip";
 import { EquityChart } from "./EquityChart";
 import { DrawdownChart } from "./DrawdownChart";
 import { CritiqueCard } from "./CritiqueCard";
+import { CostStressChart } from "./CostStressChart";
+import { RegimeBreakdownGrid } from "./RegimeBreakdownGrid";
 import { SectionLabel } from "./SectionLabel";
+import { SensitivityHaloChart } from "./SensitivityHaloChart";
 import { EmptyDashboard } from "./EmptyDashboard";
+import { TradesTable } from "./TradesTable";
 import type { BacktestResult } from "@/lib/types";
 
 type Props = {
@@ -35,7 +39,7 @@ export function Dashboard({
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <div className="space-y-7 px-7 py-6">
+      <div className="mx-auto w-full max-w-[1180px] space-y-7 px-7 py-6">
         {/* header strip — strategy meta */}
         <motion.div
           initial={{ opacity: 0, y: -4 }}
@@ -84,6 +88,16 @@ export function Dashboard({
           </div>
         </section>
 
+        {/* sensitivity halo — the hero anti-overfit chart */}
+        {result.sensitivity_halo && (
+          <SensitivityHaloChart
+            halo={result.sensitivity_halo}
+            baseline={result.equity_curve}
+            trainFraction={trainFrac}
+            valFraction={valFrac}
+          />
+        )}
+
         {/* drawdown */}
         <section className="space-y-3">
           <SectionLabel rule>drawdown</SectionLabel>
@@ -91,6 +105,17 @@ export function Dashboard({
             <DrawdownChart drawdown={result.drawdown_curve} />
           </div>
         </section>
+
+        {/* anti-overfit views — the wedge */}
+        {result.cost_stress.length > 0 && (
+          <CostStressChart points={result.cost_stress} />
+        )}
+        {result.regime_breakdown && (
+          <RegimeBreakdownGrid regime={result.regime_breakdown} />
+        )}
+
+        {/* trade log */}
+        <TradesTable trades={result.trades} />
 
         {/* critique */}
         <CritiqueCard text={critique} loading={critiqueLoading} />

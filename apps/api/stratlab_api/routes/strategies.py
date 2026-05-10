@@ -3,9 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from stratlab_api.auth import current_user
+from stratlab_api.exporters import build_export_bundle
 from stratlab_api.schemas import (
     CreateStrategyRequest,
     CreateStrategyResponse,
+    ExportBundleResponse,
     StrategyDetail,
     StrategySummary,
     StrategyVersionInfo,
@@ -70,4 +72,33 @@ async def get_strategy(
             StrategyVersionInfo(id=v.id, created_at=v.created_at, strategy=v.schema_obj)
             for v in rec.versions
         ],
+    )
+
+
+@router.get(
+    "/{strategy_id}/versions/{version_id}/export",
+    response_model=ExportBundleResponse,
+)
+async def export_version(
+    strategy_id: str,
+    version_id: str,
+    user_id: UserDep,
+    store: StoreDep,
+) -> ExportBundleResponse:
+    try:
+        rec = store.get_strategy(user_id, strategy_id)
+    except KeyError as e:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, f"strategy not found: {strategy_id}"
+        ) from e
+    version = next((v for v in rec.versions if v.id == version_id), None)
+    if version is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, f"version not found: {version_id}"
+        )
+    bundle = build_export_bundle(version.schema_obj)
+    return ExportBundleResponse(
+        strategy_id=strategy_id,
+        version_id=version_id,
+        files=bundle.files,
     )

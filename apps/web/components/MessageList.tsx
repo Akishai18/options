@@ -7,19 +7,33 @@ import type { ChatMsg } from "@/lib/types";
 type Props = {
   messages: ChatMsg[];
   thinking?: boolean;
+  onViewResults?: () => void;
 };
 
-export function MessageList({ messages, thinking }: Props) {
+export function MessageList({ messages, thinking, onViewResults }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length, thinking]);
 
+  // Find the latest backtest event so only the freshest one shows the CTA.
+  let latestBacktestEventId: string | null = null;
+  for (const m of messages) {
+    if (m.role === "event" && m.meta?.backtestId) {
+      latestBacktestEventId = m.id;
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-3 px-5 py-4">
+    <div className="flex flex-col gap-3 px-6 py-6">
       {messages.map((m) => (
-        <MessageBubble key={m.id} msg={m} />
+        <MessageBubble
+          key={m.id}
+          msg={m}
+          showResultsCta={m.id === latestBacktestEventId}
+          onViewResults={onViewResults}
+        />
       ))}
       {thinking && (
         <div className="flex items-center gap-2 pl-1">

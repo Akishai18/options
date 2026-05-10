@@ -1,13 +1,17 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Topbar } from "./Topbar";
-import { MessageList } from "./MessageList";
-import { Composer } from "./Composer";
-import { EmptyChat } from "./EmptyChat";
+import { Sidebar, type View } from "./Sidebar";
+import { ChatView } from "./ChatView";
 import { Dashboard } from "./Dashboard";
+import { CodeView } from "./CodeView";
+import { LibraryView } from "./LibraryView";
+import { CompareView } from "./CompareView";
+import { VersionTimeline, type VersionEntry } from "./VersionTimeline";
 import { chatTurn, getCritique, ApiError } from "@/lib/api";
-import type { BacktestResult, ChatMsg } from "@/lib/types";
+import type { ChatMsg, StrategySchema } from "@/lib/types";
 
 type Status = "idle" | "thinking" | "running" | "critiquing" | "ready" | "error";
 
@@ -15,26 +19,74 @@ let _msgId = 0;
 const newId = () => `m${++_msgId}`;
 
 export function Workbench() {
+  const [view, setView] = useState<View>("chat");
+  const [resultsViewedAt, setResultsViewedAt] = useState<number>(0);
+  const [resultsReadyAt, setResultsReadyAt] = useState<number>(0);
+
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [strategyId, setStrategyId] = useState<string | null>(null);
-  const [strategyName, setStrategyName] = useState<string | null>(null);
-  const [versionLabel, setVersionLabel] = useState<string | null>(null);
   const [versionCounter, setVersionCounter] = useState(0);
-  const [result, setResult] = useState<BacktestResult | null>(null);
-  const [asset, setAsset] = useState<string | null>(null);
-  const [timeframe, setTimeframe] = useState<string | null>(null);
-  const [critique, setCritique] = useState<string | null>(null);
+
+  // Per-version state — we keep all backtested versions, not just the latest.
+  const [versions, setVersions] = useState<VersionEntry[]>([]);
+  const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
+  const [compareVersionId, setCompareVersionId] = useState<string | null>(null);
+
+  // Per-version critiques live in their own map so switching versions doesn't
+  // wipe a fetched critique.
+  const [critiqueByVersion, setCritiqueByVersion] = useState<Record<string, string>>({});
+  // Track which version's critique is currently fetching, so the dashboard
+  // shimmer reflects the active card's state, not a global one.
+  const [critiqueLoadingFor, setCritiqueLoadingFor] = useState<string | null>(null);
+
+  // Per-version strategy snapshot — Code view should reflect the active version.
+  const [schemaByVersion, setSchemaByVersion] = useState<Record<string, StrategySchema>>({});
+
   const [status, setStatus] = useState<Status>("idle");
+
+  const activeVersion = useMemo(
+    () => versions.find((v) => v.id === activeVersionId) ?? null,
+    [versions, activeVersionId],
+  );
+  const compareVersion = useMemo(
+    () => (compareVersionId ? versions.find((v) => v.id === compareVersionId) ?? null : null),
+    [versions, compareVersionId],
+  );
+
+  const hasFreshResults = !!activeVersion && resultsReadyAt > resultsViewedAt;
+
+  const goToView = useCallback((v: View) => {
+    setView(v);
+    if (v === "results") setResultsViewedAt(Date.now());
+  }, []);
+
+  // Keyboard shortcuts: ⌘1–⌘4 to switch views.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const map: Record<string, View> = {
+        "1": "chat",
+        "2": "results",
+        "3": "code",
+        "4": "library",
+      };
+      const target = map[e.key];
+      if (!target) return;
+      const hasStrategy = activeVersion != null;
+      if ((target === "results" || target === "code") && !hasStrategy) return;
+      e.preventDefault();
+      goToView(target);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeVersion, goToView]);
 
   const handleSubmit = useCallback(
     async (text: string) => {
-      // 1. push the user message immediately
       setMessages((m) => [...m, { id: newId(), role: "user", content: text }]);
       setStatus("thinking");
-      setCritique(null);
 
       try {
-        // 2. parse + backtest in one round-trip
         const turn = await chatTurn({
           message: text,
           strategy_id: strategyId ?? undefined,
@@ -55,17 +107,12 @@ export function Workbench() {
           return;
         }
 
-        // strategy + backtest path
-        if (turn.strategy?.name) setStrategyName(turn.strategy.name);
-        if (turn.strategy?.data?.asset) setAsset(turn.strategy.data.asset);
-        if (turn.strategy?.data?.timeframe) setTimeframe(turn.strategy.data.timeframe);
         if (turn.strategy_id) setStrategyId(turn.strategy_id);
 
         const nextVersion = versionCounter + 1;
         setVersionCounter(nextVersion);
-        setVersionLabel(`v${nextVersion}`);
+        const versionLabel = `v${nextVersion}`;
 
-        // assistant explanation message
         if (turn.explanation) {
           setMessages((m) => [
             ...m,
@@ -87,20 +134,35 @@ export function Workbench() {
           return;
         }
 
-        // Render dashboard
-        setStatus("running"); // brief flash
-        setResult(bt.result);
+        setStatus("running");
 
-        // Event message in chat: gives the user a chronological breadcrumb
+        const versionId = `ver-${nextVersion}-${Date.now()}`;
+        const newEntry: VersionEntry = {
+          id: versionId,
+          label: versionLabel,
+          prompt: text,
+          result: bt.result,
+          asset: turn.strategy?.data?.asset ?? null,
+          timeframe: turn.strategy?.data?.timeframe ?? null,
+          createdAt: Date.now(),
+          serverVersionId: turn.version_id ?? null,
+        };
+        setVersions((vs) => [...vs, newEntry]);
+        setActiveVersionId(versionId);
+        setResultsReadyAt(Date.now());
+        if (turn.strategy) {
+          setSchemaByVersion((m) => ({ ...m, [versionId]: turn.strategy! }));
+        }
+
         const m = bt.result.metrics_full;
         setMessages((mm) => [
           ...mm,
           {
             id: newId(),
             role: "event",
-            content: `v${nextVersion} — ${m.num_trades} trades · Sharpe ${m.sharpe.toFixed(2)} · return ${(m.total_return * 100).toFixed(1)}%`,
+            content: `${versionLabel} — ${m.num_trades} trades · Sharpe ${m.sharpe.toFixed(2)} · return ${(m.total_return * 100).toFixed(1)}%`,
             meta: {
-              versionLabel: `v${nextVersion}`,
+              versionLabel,
               backtestId: bt.backtest_id,
               sharpe: m.sharpe,
               totalReturn: m.total_return,
@@ -108,11 +170,11 @@ export function Workbench() {
           },
         ]);
 
-        // 3. critique (separate call so the dashboard renders before the LLM finishes)
         setStatus("critiquing");
+        setCritiqueLoadingFor(versionId);
         try {
           const crit = await getCritique(bt.backtest_id);
-          setCritique(crit.text);
+          setCritiqueByVersion((c) => ({ ...c, [versionId]: crit.text }));
           setStatus("ready");
         } catch (e) {
           const detail = e instanceof ApiError ? e.message : String(e);
@@ -121,6 +183,8 @@ export function Workbench() {
             { id: newId(), role: "event", content: `critique failed — ${detail}` },
           ]);
           setStatus("ready");
+        } finally {
+          setCritiqueLoadingFor((id) => (id === versionId ? null : id));
         }
       } catch (e) {
         const detail = e instanceof ApiError ? e.message : String(e);
@@ -135,47 +199,108 @@ export function Workbench() {
   );
 
   const isBusy = status === "thinking" || status === "running";
+  const latestVersion = versions[versions.length - 1] ?? null;
+  const viewingOlder =
+    activeVersion != null && latestVersion != null && activeVersion.id !== latestVersion.id;
+
+  // Topbar reflects the ACTIVE version (not necessarily the latest).
+  const headerStrategyName = activeVersion?.result.schema_name ?? null;
+  const headerAsset = activeVersion?.asset ?? null;
+  const headerTimeframe = activeVersion?.timeframe ?? null;
+  const headerVersionLabel = activeVersion?.label ?? null;
+
+  const activeCritique = activeVersion ? critiqueByVersion[activeVersion.id] ?? null : null;
+  const activeCritiqueLoading = activeVersion?.id === critiqueLoadingFor;
+  const activeSchema = activeVersion ? schemaByVersion[activeVersion.id] ?? null : null;
 
   return (
-    <div className="flex h-screen flex-col">
-      <Topbar
-        strategyName={strategyName}
-        versionLabel={versionLabel}
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar
+        active={view}
+        onSelect={goToView}
+        hasResults={!!activeVersion}
+        hasFreshResults={hasFreshResults}
+        hasStrategy={!!activeVersion}
         status={status}
       />
-      <div className="grid flex-1 overflow-hidden grid-cols-[minmax(380px,460px)_1fr]">
-        {/* chat pane */}
-        <aside className="flex h-full flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)]">
-          <div className="flex-1 overflow-y-auto">
-            {messages.length === 0 ? (
-              <EmptyChat onPick={(p) => handleSubmit(p)} />
-            ) : (
-              <MessageList messages={messages} thinking={isBusy} />
-            )}
-          </div>
-          <div className="border-t border-[var(--color-border)] bg-[var(--color-bg)] p-4">
-            <Composer
-              onSubmit={handleSubmit}
-              disabled={isBusy}
-              placeholder={
-                strategyId
-                  ? "Refine the strategy — e.g. tighten the stop, add a vol filter…"
-                  : undefined
-              }
-            />
-          </div>
-        </aside>
-
-        {/* dashboard pane */}
-        <main className="h-full overflow-hidden">
-          <Dashboard
-            result={result}
-            asset={asset}
-            timeframe={timeframe}
-            critique={critique}
-            critiqueLoading={status === "critiquing"}
-            loading={status === "running" && !result}
-          />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Topbar
+          view={view}
+          strategyName={headerStrategyName}
+          versionLabel={headerVersionLabel}
+          asset={headerAsset}
+          timeframe={headerTimeframe}
+          status={status}
+          viewingOlder={viewingOlder}
+        />
+        <main className="relative flex-1 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={view}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.22, ease: [0.22, 0.61, 0.36, 1] }}
+              className="absolute inset-0 flex flex-col"
+            >
+              {view === "chat" && (
+                <ChatView
+                  messages={messages}
+                  thinking={isBusy}
+                  busy={isBusy}
+                  hasStrategy={!!activeVersion}
+                  onSubmit={handleSubmit}
+                  onViewResults={() => goToView("results")}
+                />
+              )}
+              {view === "results" && (
+                <>
+                  {versions.length > 1 && (
+                    <VersionTimeline
+                      versions={versions}
+                      activeId={activeVersionId}
+                      compareId={compareVersionId}
+                      onSelect={(id) => {
+                        setActiveVersionId(id);
+                        setCompareVersionId(null);
+                      }}
+                      onCompare={(id) =>
+                        setCompareVersionId((cur) => (cur === id ? null : id))
+                      }
+                    />
+                  )}
+                  <div className="flex-1 overflow-hidden">
+                    {activeVersion && compareVersion ? (
+                      <CompareView
+                        a={activeVersion}
+                        b={compareVersion}
+                        onExit={() => setCompareVersionId(null)}
+                      />
+                    ) : (
+                      <Dashboard
+                        result={activeVersion?.result ?? null}
+                        asset={headerAsset}
+                        timeframe={headerTimeframe}
+                        critique={activeCritique}
+                        critiqueLoading={activeCritiqueLoading}
+                        loading={status === "running" && !activeVersion}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
+              {view === "code" && (
+                <CodeView
+                  strategy={activeSchema}
+                  strategyName={headerStrategyName}
+                  versionLabel={headerVersionLabel}
+                  strategyId={strategyId}
+                  versionId={activeVersion?.serverVersionId ?? null}
+                />
+              )}
+              {view === "library" && <LibraryView />}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

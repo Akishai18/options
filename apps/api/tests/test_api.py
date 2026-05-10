@@ -127,6 +127,40 @@ def test_get_strategy_returns_versions(monkeypatch):
     assert body["versions"][0]["strategy"]["name"] == "test ma cross"
 
 
+def test_export_returns_runnable_python_bundle(monkeypatch):
+    client = _fresh_app(monkeypatch)
+    create = client.post(
+        "/api/v1/strategies", json={"strategy": _example_strategy_dict()}
+    ).json()
+    sid, vid = create["strategy_id"], create["version_id"]
+    r = client.get(f"/api/v1/strategies/{sid}/versions/{vid}/export")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    files = body["files"]
+    # Three files in the bundle.
+    assert set(files) == {"strategy.py", "requirements.txt", "README.md"}
+    # The placeholder must have been substituted.
+    assert "__SCHEMA_JSON__" not in files["strategy.py"]
+    assert "__STRATEGY_NAME__" not in files["strategy.py"]
+    # The strategy name appears in the docstring.
+    assert "test ma cross" in files["strategy.py"]
+    # The exported Python file is syntactically valid.
+    compile(files["strategy.py"], "<exported>", "exec")
+    # requirements.txt pins the three runtime deps.
+    assert "ccxt" in files["requirements.txt"]
+    assert "numpy" in files["requirements.txt"]
+    assert "pandas" in files["requirements.txt"]
+
+
+def test_export_404_for_missing_version(monkeypatch):
+    client = _fresh_app(monkeypatch)
+    sid = client.post(
+        "/api/v1/strategies", json={"strategy": _example_strategy_dict()}
+    ).json()["strategy_id"]
+    r = client.get(f"/api/v1/strategies/{sid}/versions/does-not-exist/export")
+    assert r.status_code == 404
+
+
 # ---- backtests ------------------------------------------------------------
 
 

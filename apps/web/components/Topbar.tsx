@@ -1,75 +1,103 @@
 "use client";
 
+import { motion } from "motion/react";
+import type { View } from "./Sidebar";
 import { cn } from "@/lib/utils";
 
 type Props = {
+  view: View;
   strategyName?: string | null;
   versionLabel?: string | null;
+  asset?: string | null;
+  timeframe?: string | null;
   status: "idle" | "thinking" | "running" | "critiquing" | "ready" | "error";
+  viewingOlder?: boolean;
 };
 
-const statusCopy: Record<Props["status"], string> = {
-  idle: "ready",
-  thinking: "parsing strategy",
-  running: "running backtest",
-  critiquing: "generating critique",
-  ready: "ready",
-  error: "error",
+const viewTitle: Record<View, { eyebrow: string; title: string }> = {
+  chat: { eyebrow: "conversation", title: "Describe & iterate" },
+  results: { eyebrow: "backtest", title: "Results" },
+  code: { eyebrow: "spec", title: "Code" },
+  library: { eyebrow: "reference", title: "Library" },
 };
 
-export function Topbar({ strategyName, versionLabel, status }: Props) {
+export function Topbar({
+  view,
+  strategyName,
+  versionLabel,
+  asset,
+  timeframe,
+  status,
+  viewingOlder,
+}: Props) {
   const live = status === "thinking" || status === "running" || status === "critiquing";
+  const ctx = viewTitle[view];
+
   return (
     <header className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/70 backdrop-blur">
-      <div className="flex items-center px-6 h-14 gap-6">
-        {/* wordmark */}
-        <div className="flex items-baseline gap-2">
-          <span className="font-mono text-[15px] font-medium tracking-[0.18em] text-[var(--color-fg)]">
-            STRATLAB
+      <div className="flex h-14 items-center gap-5 px-7">
+        {/* contextual title */}
+        <motion.div
+          key={view}
+          initial={{ opacity: 0, y: -2 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex items-baseline gap-2.5"
+        >
+          <span className="eyebrow">{ctx.eyebrow}</span>
+          <span className="serif-italic text-[15px] text-[var(--color-fg)]">
+            {ctx.title}
           </span>
-          <span className="serif-italic text-[13px] text-[var(--color-fg-faint)]">
-            workbench
-          </span>
-        </div>
+        </motion.div>
 
-        {/* divider */}
-        <span className="h-4 w-px bg-[var(--color-border)]" />
-
-        {/* status line — terminal-ish breadcrumb */}
-        <div className="flex items-center gap-3 font-mono text-[12px] text-[var(--color-fg-muted)] min-w-0">
-          {strategyName ? (
-            <>
+        {/* breadcrumb */}
+        {strategyName && (
+          <>
+            <span className="h-4 w-px bg-[var(--color-border)]" />
+            <div className="flex min-w-0 items-center gap-2 font-mono text-[12px] text-[var(--color-fg-muted)]">
               <span className="truncate text-[var(--color-fg)]">{strategyName}</span>
               {versionLabel && (
                 <>
                   <span className="text-[var(--color-fg-faint)]">/</span>
-                  <span className="text-[var(--color-fg-muted)]">{versionLabel}</span>
+                  <span>{versionLabel}</span>
                 </>
               )}
-            </>
-          ) : (
-            <span className="text-[var(--color-fg-faint)]">
-              no strategy yet — describe one to begin
-            </span>
-          )}
-        </div>
+              {asset && timeframe && (
+                <>
+                  <span className="text-[var(--color-fg-faint)]">·</span>
+                  <span>
+                    {asset} <span className="text-[var(--color-fg-faint)]">{timeframe}</span>
+                  </span>
+                </>
+              )}
+            </div>
+          </>
+        )}
 
-        {/* spacer */}
-        <div className="ml-auto" />
+        {viewingOlder && (
+          <span
+            className={cn(
+              "ml-3 inline-flex items-center gap-1.5 rounded border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-2 py-0.5",
+              "font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-accent-strong)]",
+            )}
+          >
+            <span className="h-1 w-1 rounded-full bg-[var(--color-accent)]" />
+            viewing older version
+          </span>
+        )}
 
-        {/* live status indicator */}
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           <span
             className={cn(
               "h-1.5 w-1.5 rounded-full",
               status === "error" && "bg-[var(--color-down)]",
-              status === "ready" || status === "idle"
-                ? "bg-[var(--color-up)]"
-                : null,
+              !live && (status === "ready" || status === "idle") && "bg-[var(--color-up)]",
               live && "bg-[var(--color-accent)] animate-pulse",
             )}
           />
-          <span className="eyebrow text-[10.5px]">{statusCopy[status]}</span>
+          <span className="eyebrow text-[10px]">
+            {live ? "working" : status === "error" ? "error" : "ready"}
+          </span>
         </div>
       </div>
     </header>

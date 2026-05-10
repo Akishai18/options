@@ -46,4 +46,19 @@ export async function getCritique(backtestId: string): Promise<CritiqueResponse>
   });
 }
 
+export type ExportBundleResponse = {
+  strategy_id: string;
+  version_id: string;
+  files: Record<string, string>;
+};
+
+export async function getExportBundle(
+  strategyId: string,
+  versionId: string,
+): Promise<ExportBundleResponse> {
+  return request<ExportBundleResponse>(
+    `/api/v1/strategies/${strategyId}/versions/${versionId}/export`,
+  );
+}
+
 export { ApiError };

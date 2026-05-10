@@ -8,6 +8,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from stratlab_engine.overfitting.cost_stress import CostStressPoint
+from stratlab_engine.overfitting.regime import RegimeBreakdown
+from stratlab_engine.overfitting.sensitivity import SensitivityHalo
+
 
 class TradeRecord(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -63,6 +67,11 @@ class BacktestResult(BaseModel):
     metrics_val: MetricsBlock | None = None
     metrics_test: MetricsBlock | None = None
     metrics_benchmark_full: MetricsBlock
+
+    # Anti-overfit analyses (test-window focused).
+    cost_stress: list[CostStressPoint] = []
+    regime_breakdown: RegimeBreakdown | None = None
+    sensitivity_halo: SensitivityHalo | None = None
 
     # Provenance + reproducibility.
     data_start: datetime

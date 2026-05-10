@@ -400,6 +400,157 @@ def test_backtest_result_json_roundtrip(synthetic_uptrend):
     assert len(rebuilt.equity_curve) == len(result.equity_curve)
 
 
+# ---- anti-overfit analyses ------------------------------------------------
+
+
+def test_cost_stress_runs_at_each_multiplier(synthetic_uptrend):
+    df = synthetic_uptrend
+    schema = StrategySchema(
+        name="ema cross — fee sensitive",
+        data=DataSpec(asset=Asset.BTC, timeframe=Timeframe.D1,
+                      start=df.index[0].date(), end=df.index[-1].date()),
+        entry=Comparison(op="cross_above",
+                         left=IndicatorRef(name="ema", params={"period": 10}),
+                         right=IndicatorRef(name="ema", params={"period": 30})),
+        exit=Comparison(op="cross_below",
+                        left=IndicatorRef(name="ema", params={"period": 10}),
+                        right=IndicatorRef(name="ema", params={"period": 30})),
+        risk=RiskRules(stop_loss_pct=0.10),
+        sizing=Sizing(mode="fixed_fraction", fraction=0.5),
+        costs=Costs(fee_bps=10, slippage_bps=0),
+    )
+    result = run_backtest(schema, df)
+    assert len(result.cost_stress) == 3
+    mults = [p.multiplier for p in result.cost_stress]
+    assert mults == [1.0, 1.5, 2.0]
+    fee_at_1 = result.cost_stress[0].fee_bps
+    fee_at_2 = result.cost_stress[2].fee_bps
+    assert fee_at_2 == pytest.approx(2 * fee_at_1)
+
+
+def test_cost_stress_higher_fees_dont_improve_sharpe(synthetic_uptrend):
+    """At higher fees, a strategy that actually trades cannot do BETTER on
+    sharpe. (It can be flat if there are zero trades.)"""
+    df = synthetic_uptrend
+    schema = StrategySchema(
+        name="frequent EMA — high fee burden",
+        data=DataSpec(asset=Asset.BTC, timeframe=Timeframe.D1,
+                      start=df.index[0].date(), end=df.index[-1].date()),
+        entry=Comparison(op="cross_above",
+                         left=IndicatorRef(name="ema", params={"period": 5}),
+                         right=IndicatorRef(name="ema", params={"period": 15})),
+        exit=Comparison(op="cross_below",
+                        left=IndicatorRef(name="ema", params={"period": 5}),
+                        right=IndicatorRef(name="ema", params={"period": 15})),
+        risk=RiskRules(stop_loss_pct=0.10),
+        sizing=Sizing(mode="fixed_fraction", fraction=0.5),
+        costs=Costs(fee_bps=20, slippage_bps=0),
+    )
+    result = run_backtest(schema, df)
+    assert result.cost_stress
+    base_sharpe = result.cost_stress[0].sharpe
+    high_sharpe = result.cost_stress[-1].sharpe
+    # Higher costs strictly cannot increase sharpe (within fp noise).
+    assert high_sharpe <= base_sharpe + 1e-9, (
+        f"cost stress should not raise Sharpe ({base_sharpe:.3f} → {high_sharpe:.3f})"
+    )
+
+
+def test_regime_breakdown_returns_four_cells(synthetic_uptrend):
+    df = synthetic_uptrend
+    schema = _trivial_schema(df, exit=None,
+                             risk=RiskRules(stop_loss_pct=0.99),
+                             sizing=Sizing(mode="fixed_fraction", fraction=0.5),
+                             costs=Costs(fee_bps=0, slippage_bps=0))
+    result = run_backtest(schema, df)
+    rb = result.regime_breakdown
+    assert rb is not None
+    # All four labels populated, fractions sum to ~2 (since the two splits
+    # are independent partitions, each summing to ~1).
+    assert rb.low_vol.label == "low_vol"
+    assert rb.high_vol.label == "high_vol"
+    assert rb.trending.label == "trending"
+    assert rb.sideways.label == "sideways"
+    vol_sum = rb.low_vol.fraction + rb.high_vol.fraction
+    trend_sum = rb.trending.fraction + rb.sideways.fraction
+    assert 0.95 < vol_sum < 1.05
+    assert 0.95 < trend_sum < 1.05
+
+
+def test_sensitivity_halo_envelope_brackets_baseline(synthetic_uptrend):
+    """halo lo[t] ≤ baseline[t] ≤ hi[t] at every bar — by construction."""
+    df = synthetic_uptrend
+    schema = StrategySchema(
+        name="ema cross sensitive",
+        data=DataSpec(asset=Asset.BTC, timeframe=Timeframe.D1,
+                      start=df.index[0].date(), end=df.index[-1].date()),
+        entry=Comparison(op="cross_above",
+                         left=IndicatorRef(name="ema", params={"period": 20}),
+                         right=IndicatorRef(name="ema", params={"period": 50})),
+        exit=Comparison(op="cross_below",
+                        left=IndicatorRef(name="ema", params={"period": 20}),
+                        right=IndicatorRef(name="ema", params={"period": 50})),
+        risk=RiskRules(stop_loss_pct=0.10),
+        sizing=Sizing(mode="fixed_fraction", fraction=0.5),
+        costs=Costs(fee_bps=0, slippage_bps=0),
+        perturbable_params=[
+            "entry.left.params.period",
+            "entry.right.params.period",
+        ],
+    )
+    result = run_backtest(schema, df)
+    halo = result.sensitivity_halo
+    assert halo is not None
+    assert halo.delta == pytest.approx(0.20)
+    assert len(halo.envelope_lo) == result.bars
+    assert len(halo.envelope_hi) == result.bars
+    base_eq = [v for _, v in result.equity_curve]
+    for i, ((_, lo), (_, hi)) in enumerate(
+        zip(halo.envelope_lo, halo.envelope_hi, strict=True)
+    ):
+        assert lo <= base_eq[i] + 1e-9, f"bar {i}: lo {lo} > base {base_eq[i]}"
+        assert hi >= base_eq[i] - 1e-9, f"bar {i}: hi {hi} < base {base_eq[i]}"
+    assert len(halo.perturbations) == 2
+
+
+def test_sensitivity_halo_skipped_when_no_perturbable_params(synthetic_uptrend):
+    """No perturbable_params → no halo (saves 2N+1 reruns when nothing to do)."""
+    df = synthetic_uptrend
+    schema = _trivial_schema(df, exit=None,
+                             risk=RiskRules(stop_loss_pct=0.99),
+                             costs=Costs(fee_bps=0, slippage_bps=0))
+    result = run_backtest(schema, df)
+    assert result.sensitivity_halo is None
+
+
+def test_sensitivity_halo_caps_at_max_params(synthetic_uptrend):
+    """More than MAX_PARAMS perturbable paths → cap enforced; excess in skipped_paths."""
+    from stratlab_engine.overfitting.sensitivity import MAX_PARAMS
+    df = synthetic_uptrend
+    # Use a schema with multiple integer params; reuse the same path many times
+    # to exceed the cap (the cap is enforced on path count, not uniqueness).
+    paths = ["risk.stop_loss_pct"] * (MAX_PARAMS + 2)
+    schema = _trivial_schema(df, exit=None,
+                             risk=RiskRules(stop_loss_pct=0.10),
+                             costs=Costs(fee_bps=0, slippage_bps=0),
+                             perturbable_params=paths)
+    result = run_backtest(schema, df)
+    halo = result.sensitivity_halo
+    assert halo is not None
+    assert len(halo.perturbed_paths) == MAX_PARAMS
+    assert len(halo.skipped_paths) >= 2
+
+
+def test_regime_breakdown_skipped_for_short_test_window():
+    """A 50-bar dataset → test split too small → regime_breakdown is None."""
+    df = _flat_ohlcv(np.linspace(100, 110, 50))
+    schema = _trivial_schema(df, exit=None,
+                             risk=RiskRules(stop_loss_pct=0.99),
+                             costs=Costs(fee_bps=0, slippage_bps=0))
+    result = run_backtest(schema, df)
+    assert result.regime_breakdown is None
+
+
 # ---- integration: run every M0 example on real backfilled data -----------
 
 
