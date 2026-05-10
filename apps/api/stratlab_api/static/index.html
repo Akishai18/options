@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StratLab — local backtest runner</title>
+  <style>
+    :root {
+      --fg: #1a1a1a; --muted: #666; --bg: #fafafa;
+      --card: #fff; --border: #e5e5e5; --accent: #1a1a1a;
+      --ok: #0a8d5b; --err: #c0392b; --warn: #b8851b;
+      --halo-good: #d4ead7; --halo-bad: #f4dada;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+      max-width: 1180px; margin: 0 auto; padding: 28px 20px;
+      color: var(--fg); background: var(--bg); line-height: 1.4;
+    }
+    h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; }
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 20px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .card h2 { font-size: 14px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    textarea {
+      width: 100%; min-height: 380px; resize: vertical;
+      font-family: ui-monospace, SF Mono, Menlo, Consolas, monospace;
+      font-size: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;
+      color: var(--fg); background: var(--bg);
+    }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+    button {
+      padding: 8px 14px; background: var(--accent); color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
+    }
+    button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--border); }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: #fff; }
+    .status { font-size: 13px; margin-left: auto; }
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--err); }
+    .status.warn { color: var(--warn); }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--border); }
+    th { background: var(--bg); font-weight: 500; color: var(--muted); }
+    th:first-child, td:first-child { text-align: left; }
+    .delta-good { color: var(--ok); }
+    .delta-bad { color: var(--err); }
+    .meta { color: var(--muted); font-size: 12px; margin: 8px 0 14px; }
+    pre.err { background: #fef0ec; padding: 10px; border-radius: 6px; color: var(--err); font-size: 12px; overflow-x: auto; }
+    .placeholder { color: var(--muted); text-align: center; padding: 40px 0; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>StratLab — local backtest runner</h1>
+  <div class="sub">
+    Local dev page · paste a <code>StrategySchema</code> JSON, hit Run, get metrics. Examples in
+    <code>packages/schema/examples/</code>.
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Strategy schema</h2>
+      <div class="row">
+        <select id="example-select">
+          <option value="">— load an example —</option>
+          <option value="ma_crossover">MA crossover (BTC 1d)</option>
+          <option value="rsi_mean_reversion">RSI mean reversion (ETH 4h)</option>
+          <option value="donchian_breakout">Donchian breakout (BTC 1d)</option>
+          <option value="vol_filtered_trend">Vol-filtered trend (BTC 1d)</option>
+          <option value="momentum_with_rsi">Momentum + RSI (ETH 1d)</option>
+        </select>
+        <button id="run-btn">Run backtest</button>
+        <span id="status" class="status"></span>
+      </div>
+      <textarea id="schema-json" spellcheck="false" placeholder='{"strategy": { ... }}'></textarea>
+    </section>
+
+    <section class="card">
+      <h2>Result</h2>
+      <div id="result"><div class="placeholder">Run a backtest to see metrics here.</div></div>
+    </section>
+  </div>
+
+<script>
+const EXAMPLES = {
+  ma_crossover: {
+    schema_version: "1.0.0",
+    name: "BTC golden cross",
+    side: "long",
+    data: { asset: "BTC", timeframe: "1d", start: "2021-06-01", end: "2025-01-01" },
+    entry: { type: "comparison", op: "cross_above",
+      left:  { type: "indicator", name: "sma", params: { period: 50 } },
+      right: { type: "indicator", name: "sma", params: { period: 200 } } },
+    exit:  { type: "comparison", op: "cross_below",
+      left:  { type: "indicator", name: "sma", params: { period: 50 } },
+      right: { type: "indicator", name: "sma", params: { period: 200 } } },
+    sizing: { mode: "fixed_fraction", fraction: 0.95 },
+    risk:   { stop_loss_pct: null, take_profit_pct: null, max_position_pct: 1.0, max_concurrent_positions: 1 },
+    costs:  { fee_bps: 10, slippage_bps: 5 },
+    splits: { train: 0.6, val: 0.2, test: 0.2 },
+    perturbable_params: ["entry.left.params.period", "entry.right.params.period"]
+  },
+  rsi_mean_reversion: {
+    schema_version: "1.0.0",
+    name: "ETH RSI mean reversion",
+    side: "long",
+    data: { asset: "ETH", timeframe: "4h", start: "2022-01-01", end: "2024-12-31" },
+    entry: { type: "comparison", op: "lt",
+      left:  { type: "indicator", name: "rsi", params: { period: 14 } },
+      right: { type: "constant", value: 30 } },
+    exit:  { type: "comparison", op: "gt",
+      left:  { type: "indicator", name: "rsi", params: { period: 14 } },
+      right: { type: "constant", value: 55 } },
+    sizing: { mode: "fixed_fraction", fraction: 0.1 },
+    risk:   { stop_loss_pct: 0.04, take_profit_pct: null, max_position_pct: 1.0, max_concurrent_positions: 1 },
+    costs:  { fee_bps: 10, slippage_bps: 5 },
+    splits: { train: 0.6, val: 0.2, test: 0.2 },
+    perturbable_params: ["entry.right.value", "exit.right.value"]
+  },
+  donchian_breakout: {
+    schema_version: "1.0.0",
+    name: "BTC Donchian breakout",
+    side: "long",
+    data: { asset: "BTC", timeframe: "1d", start: "2021-06-01", end: "2025-01-01" },
+    entry: { type: "comparison", op: "gt",
+      left:  { type: "indicator", name: "close" },
+      right: { type: "indicator", name: "rolling_max", params: { period: 20 }, on: "high" } },
+    exit:  null,
+    sizing: { mode: "fixed_fraction", fraction: 0.5 },
+    risk:   { stop_loss_pct: 0.05, take_profit_pct: 0.15, max_position_pct: 1.0, max_concurrent_positions: 1 },
+    costs:  { fee_bps: 10, slippage_bps: 5 },
+    splits: { train: 0.6, val: 0.2, test: 0.2 },
+    perturbable_params: ["entry.right.params.period", "risk.stop_loss_pct"]
+  },
+  vol_filtered_trend: {
+    schema_version: "1.0.0",
+    name: "BTC vol-filtered trend",
+    side: "long",
+    data: { asset: "BTC", timeframe: "1d", start: "2021-06-01", end: "2025-01-01" },
+    entry: { type: "logical", op: "and", operands: [
+      { type: "comparison", op: "cross_above",
+        left:  { type: "indicator", name: "ema", params: { period: 20 } },
+        right: { type: "indicator", name: "ema", params: { period: 50 } } },
+      { type: "comparison", op: "lt",
+        left:  { type: "indicator", name: "realized_vol", params: { period: 30 } },
+        right: { type: "indicator", name: "realized_vol", params: { period: 180 } } }
+    ]},
+    exit:  { type: "comparison", op: "cross_below",
+      left:  { type: "indicator", name: "ema", params: { period: 20 } },
+      right: { type: "indicator", name: "ema", params: { period: 50 } } },
+    sizing: { mode: "vol_target", fraction: 0.5, vol_target_annual: 0.20 },
+    risk:   { stop_loss_pct: 0.08, take_profit_pct: null, max_position_pct: 1.0, max_concurrent_positions: 1 },
+    costs:  { fee_bps: 10, slippage_bps: 5 },
+    splits: { train: 0.6, val: 0.2, test: 0.2 },
+    perturbable_params: ["risk.stop_loss_pct"]
+  },
+  momentum_with_rsi: {
+    schema_version: "1.0.0",
+    name: "ETH momentum with RSI",
+    side: "long",
+    data: { asset: "ETH", timeframe: "1d", start: "2021-06-01", end: "2025-01-01" },
+    entry: { type: "logical", op: "and", operands: [
+      { type: "comparison", op: "gt",
+        left:  { type: "indicator", name: "slope", params: { period: 30 } },
+        right: { type: "constant", value: 0 } },
+      { type: "comparison", op: "gt",
+        left:  { type: "indicator", name: "rsi", params: { period: 14 } },
+        right: { type: "constant", value: 55 } }
+    ]},
+    exit:  { type: "comparison", op: "lt",
+      left:  { type: "indicator", name: "rsi", params: { period: 14 } },
+      right: { type: "constant", value: 45 } },
+    sizing: { mode: "fixed_fraction", fraction: 0.5 },
+    risk:   { stop_loss_pct: 0.06, take_profit_pct: null, max_position_pct: 1.0, max_concurrent_positions: 1 },
+    costs:  { fee_bps: 10, slippage_bps: 5 },
+    splits: { train: 0.6, val: 0.2, test: 0.2 },
+    perturbable_params: []
+  }
+};
+
+const $ = (sel) => document.querySelector(sel);
+
+$("#example-select").onchange = (e) => {
+  const v = e.target.value;
+  if (!v) return;
+  $("#schema-json").value = JSON.stringify(EXAMPLES[v], null, 2);
+};
+
+$("#run-btn").onclick = async () => {
+  const status = $("#status"); const result = $("#result"); const btn = $("#run-btn");
+  status.textContent = "running…"; status.className = "status warn";
+  result.innerHTML = '<div class="placeholder">…</div>';
+  btn.disabled = true;
+
+  let strategy;
+  try { strategy = JSON.parse($("#schema-json").value); }
+  catch (e) {
+    status.textContent = "JSON parse error"; status.className = "status err";
+    result.innerHTML = `<pre class="err">${escape(e.message)}</pre>`;
+    btn.disabled = false; return;
+  }
+
+  try {
+    const r = await fetch("/api/v1/backtests", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ strategy })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      status.textContent = `error ${r.status}`; status.className = "status err";
+      result.innerHTML = `<pre class="err">${escape(JSON.stringify(data, null, 2) || r.statusText)}</pre>`;
+    } else {
+      status.textContent = data.status; status.className = "status ok";
+      renderResult(data, result);
+    }
+  } catch (e) {
+    status.textContent = "fetch failed"; status.className = "status err";
+    result.innerHTML = `<pre class="err">${escape(e.message)}</pre>`;
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+function renderResult(data, container) {
+  if (!data.result) {
+    container.innerHTML = `<pre class="err">${escape(data.error || "no result")}</pre>`;
+    return;
+  }
+  const r = data.result;
+  const splits = [
+    ["full", r.metrics_full],
+    ["train (IS)", r.metrics_train],
+    ["val", r.metrics_val],
+    ["test (OOS)", r.metrics_test],
+    ["benchmark", r.metrics_benchmark_full],
+  ].filter(([_, m]) => m);
+
+  // IS → OOS deltas
+  const train = r.metrics_train, test = r.metrics_test;
+  let deltaRow = "";
+  if (train && test) {
+    deltaRow = `<div class="meta">
+      Sharpe IS→OOS: <strong>${train.sharpe.toFixed(2)} → ${test.sharpe.toFixed(2)}</strong>
+      ${marker(test.sharpe - train.sharpe, 0)}
+      · Return IS→OOS: <strong>${pct(train.total_return)} → ${pct(test.total_return)}</strong>
+      · MaxDD: <strong>${pct(test.max_drawdown)}</strong>
+    </div>`;
+  }
+
+  let html = `<div style="display:flex;justify-content:space-between;align-items:baseline;">
+    <div><strong>${escape(r.schema_name)}</strong></div>
+    <div class="meta">${r.bars} bars · ${r.data_start.slice(0,10)} → ${r.data_end.slice(0,10)} · <code>${r.schema_hash}</code></div>
+  </div>`;
+  html += deltaRow;
+  html += `<table><thead><tr>
+    <th>split</th><th>bars</th><th>trades</th><th>return</th><th>CAGR</th>
+    <th>Sharpe</th><th>MaxDD</th><th>WinRt</th><th>PF</th><th>Exposure</th>
+  </tr></thead><tbody>`;
+  for (const [name, m] of splits) {
+    html += `<tr>
+      <td>${name}</td>
+      <td>${m.bars}</td>
+      <td>${m.num_trades}</td>
+      <td>${pct(m.total_return)}</td>
+      <td>${pct(m.cagr)}</td>
+      <td>${m.sharpe.toFixed(2)}</td>
+      <td>${pct(m.max_drawdown)}</td>
+      <td>${pct(m.win_rate)}</td>
+      <td>${m.profit_factor.toFixed(2)}</td>
+      <td>${pct(m.exposure)}</td>
+    </tr>`;
+  }
+  html += "</tbody></table>";
+  container.innerHTML = html;
+}
+
+function pct(v) {
+  if (v == null || isNaN(v)) return "—";
+  return (v * 100).toFixed(2) + "%";
+}
+function marker(delta, threshold) {
+  if (delta == null || isNaN(delta)) return "";
+  const cls = delta >= threshold ? "delta-good" : "delta-bad";
+  const sign = delta >= 0 ? "▲" : "▼";
+  return `<span class="${cls}">(${sign}${Math.abs(delta).toFixed(2)})</span>`;
+}
+function escape(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+</script>
+</body>
+</html>

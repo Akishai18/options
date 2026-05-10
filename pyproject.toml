@@ -5,16 +5,21 @@ description = "StratLab — conversational quant research workbench (monorepo ro
 requires-python = ">=3.13"
 
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["packages/*", "apps/api"]
 
 [tool.uv.sources]
 stratlab-schema = { workspace = true }
+stratlab-engine = { workspace = true }
+stratlab-api = { workspace = true }
 
 [dependency-groups]
 dev = [
     "pytest>=8.0",
     "ruff>=0.7",
+    "httpx>=0.28",
     "stratlab-schema",
+    "stratlab-engine",
+    "stratlab-api",
 ]
 
 [tool.ruff]
@@ -25,5 +30,5 @@ target-version = "py313"
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.pytest.ini_options]
-testpaths = ["packages"]
+testpaths = ["packages", "apps"]
 addopts = "-q"
