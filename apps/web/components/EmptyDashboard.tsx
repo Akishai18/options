@@ -9,18 +9,19 @@ export function EmptyDashboard() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-[44ch] text-center"
+        transition={{ duration: 0.6, ease: [0.22, 0.61, 0.36, 1] }}
+        className="max-w-[52ch] text-center"
       >
-        <div className="mx-auto mb-6 grid place-items-center">
+        <div className="mx-auto mb-7 grid place-items-center">
           <SkeletonChart />
         </div>
-        <p className="eyebrow mb-3">awaiting first backtest</p>
-        <p className="serif-italic text-[19px] leading-[1.4] text-[var(--color-fg-muted)]">
-          Results render here — equity curve, in-sample / out-of-sample split,
-          drawdown, and an AI critique grounded in the actual numbers.
+        <p className="eyebrow mb-4">awaiting first backtest</p>
+        <p className="display-italic text-[26px] leading-[1.25] text-[var(--color-fg-muted)]">
+          Results render here — equity curve, IS / OOS split, sensitivity halo,
+          regime decomposition, cost stress, walk-forward, and an AI critique
+          grounded in the actual numbers.
         </p>
-        <p className="mt-5 inline-flex items-center gap-2 font-mono text-[11px] text-[var(--color-fg-faint)]">
+        <p className="mt-6 inline-flex items-center gap-2 font-mono text-[11px] text-[var(--color-fg-faint)]">
           <ArrowLeft size={12} />
           start in chat — describe a strategy
         </p>

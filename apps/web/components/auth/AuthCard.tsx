@@ -167,9 +167,10 @@ export function AuthCard({ mode }: Props) {
             type="submit"
             disabled={submitting}
             className={cn(
-              "group inline-flex w-full items-center justify-center gap-2 rounded-md px-3 py-2.5",
+              "group inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-3",
               "bg-[var(--color-accent)] text-[var(--color-bg)] font-mono text-[12px] uppercase tracking-[0.16em]",
-              "transition-colors hover:bg-[var(--color-accent-strong)]",
+              "shadow-[inset_0_1px_0_0_oklch(1_0_0/0.3),0_0_24px_-6px_var(--color-accent)]",
+              "transition-all duration-200 hover:brightness-110",
               "disabled:opacity-50 disabled:cursor-not-allowed",
             )}
           >
@@ -191,9 +192,9 @@ export function AuthCard({ mode }: Props) {
           onClick={sendMagicLink}
           disabled={submitting}
           className={cn(
-            "inline-flex w-full items-center justify-center gap-2 rounded-md px-3 py-2.5",
-            "border border-[var(--color-border)] text-[var(--color-fg)] font-mono text-[12px]",
-            "transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface)]",
+            "inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-3",
+            "glass-soft text-[var(--color-fg)] font-mono text-[12px]",
+            "transition-all duration-200 hover:bg-[oklch(1_0_0/0.08)]",
             "disabled:opacity-50 disabled:cursor-not-allowed",
           )}
         >
@@ -242,9 +243,10 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          "w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2",
+          "w-full rounded-xl glass-flat px-3.5 py-2.5",
           "text-[14px] text-[var(--color-fg)] placeholder:text-[var(--color-fg-faint)]",
-          "focus:border-[var(--color-accent)] focus:outline-none",
+          "transition-all duration-200",
+          "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/40 focus:bg-[oklch(1_0_0/0.06)]",
         )}
       />
     </label>
@@ -253,23 +255,66 @@ function Field({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[400px]">
-        <div className="mb-8 flex items-baseline justify-center gap-2">
-          <span className="font-mono text-[14px] font-medium tracking-[0.2em] text-[var(--color-fg)]">
-            STRATLAB
-          </span>
-          <span className="serif-italic text-[12px] text-[var(--color-fg-faint)]">
-            workbench
-          </span>
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden px-4 py-12">
+      {/* ambient backdrop — extended grid + soft amber wash, all CSS */}
+      <AuthBackdrop />
+
+      <div className="relative w-full max-w-[420px]">
+        {/* Editorial wordmark — bigger Fraunces lockup over a phosphor rule */}
+        <div className="mb-8 text-center">
+          <div className="inline-flex flex-col items-center">
+            <span className="font-mono text-[12.5px] font-medium tracking-[0.32em] text-[var(--color-fg)]">
+              STRATLAB
+            </span>
+            <span className="relative mt-2 block h-px w-24">
+              <span className="absolute inset-y-0 left-0 right-0 bg-[var(--color-border)]" />
+              <span className="absolute inset-y-0 left-1/4 right-1/4 bg-[var(--color-accent)] phosphor-pulse" />
+            </span>
+            <span className="display-italic mt-3 text-[22px] text-[var(--color-fg-muted)]">
+              the research workbench
+            </span>
+          </div>
         </div>
-        <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]/80 p-7 backdrop-blur">
+        <div className="glass rounded-3xl p-8 shadow-[0_24px_60px_-16px_oklch(0_0_0/0.6)]">
           {children}
         </div>
-        <p className="mt-5 text-center font-mono text-[10px] text-[var(--color-fg-faint)]">
-          backtests are easy to make look good and hard to trust.
+        <p className="serif-italic mt-6 text-center text-[13px] text-[var(--color-fg-faint)]">
+          &ldquo;Backtests are easy to make look good and hard to trust.&rdquo;
         </p>
       </div>
     </div>
+  );
+}
+
+function AuthBackdrop() {
+  return (
+    <>
+      {/* Aurora orbs — matches workbench treatment, blurred for atmosphere */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 18% 22%, oklch(0.6 0.16 215 / 0.22), transparent 65%), " +
+            "radial-gradient(50% 45% at 82% 78%, oklch(0.65 0.14 195 / 0.18), transparent 65%), " +
+            "radial-gradient(45% 40% at 50% 105%, oklch(0.55 0.18 250 / 0.16), transparent 70%)",
+          filter: "blur(40px)",
+        }}
+      />
+      {/* faint equity-curve glyph — references the product without being heavy */}
+      <svg
+        aria-hidden
+        viewBox="0 0 800 200"
+        className="pointer-events-none absolute bottom-[8%] left-1/2 -translate-x-1/2 w-[min(900px,110%)] opacity-[0.06]"
+        preserveAspectRatio="none"
+      >
+        <path
+          d="M0,170 C100,150 180,130 260,135 C340,140 420,90 500,80 C580,70 660,55 740,30 L800,20"
+          stroke="var(--color-accent)"
+          strokeWidth="1.5"
+          fill="none"
+        />
+      </svg>
+    </>
   );
 }

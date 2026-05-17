@@ -35,13 +35,13 @@ export function CostStressChart({ points }: Props) {
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]">
-        <div className="grid grid-cols-3 gap-px bg-[var(--color-border)]">
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {points.map((p) => (
             <CostBar key={p.multiplier} point={p} baseline={baseline} />
           ))}
         </div>
-        <div className="border-t border-[var(--color-border)] px-4 py-2.5 text-[11px] text-[var(--color-fg-muted)]">
+        <div className="glass-flat rounded-2xl px-4 py-2.5 text-[11px] text-[var(--color-fg-muted)]">
           <span className="serif-italic text-[var(--color-fg)]">A note. </span>
           Each bar is the entire backtest re-run with fees scaled — slippage held
           constant. A real strategy holds up at 1.5× and 2× the assumed cost; an
@@ -63,7 +63,7 @@ function CostBar({
     baseline.sharpe === 0 ? 0 : (point.sharpe - baseline.sharpe) / Math.abs(baseline.sharpe);
   const isBaseline = point.multiplier === baseline.multiplier;
   return (
-    <div className="flex flex-col gap-2 bg-[var(--color-bg)] px-4 py-3.5">
+    <div className="glass-flat rounded-2xl flex flex-col gap-2 px-4 py-3.5">
       <div className="flex items-baseline justify-between">
         <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-[var(--color-fg-muted)]">
           {point.multiplier.toFixed(1)}× fees

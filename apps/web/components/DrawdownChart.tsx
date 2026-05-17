@@ -55,7 +55,7 @@ export function DrawdownChart({ drawdown }: Props) {
               if (!active || !payload || payload.length === 0) return null;
               const p = payload[0] as { value: number; payload: { date: string } };
               return (
-                <div className="rounded border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-3 py-1.5 font-mono text-[11px]">
+                <div className="rounded-xl glass px-3 py-1.5 font-mono text-[11px]">
                   <div className="text-[10px] uppercase tracking-[0.15em] text-[var(--color-fg-faint)]">
                     {p.payload.date}
                   </div>

@@ -1,26 +1,32 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans, Instrument_Serif } from "next/font/google";
+import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const plexSans = IBM_Plex_Sans({
+/* Type system — modern, slightly rounded, liquid-glass-friendly.
+ *   - Geist:       display + body. Characterful enough to not feel like Inter.
+ *   - Geist Mono:  data, eyebrows, kbd glyphs.
+ *   - Fraunces:    reserved ONLY for tiny italic accents (taglines, AI byline
+ *                  drop-caps). No more big serif headlines — too magazine-y. */
+
+const geist = Geist({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  variable: "--font-plex-sans",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-geist-sans",
   display: "swap",
 });
 
-const plexMono = IBM_Plex_Mono({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
-  variable: "--font-plex-mono",
+  variable: "--font-geist-mono",
   display: "swap",
 });
 
-const instrumentSerif = Instrument_Serif({
+const fraunces = Fraunces({
   subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
-  variable: "--font-instrument-serif",
+  style: ["italic"],
+  axes: ["opsz", "SOFT", "WONK"],
+  variable: "--font-fraunces",
   display: "swap",
 });
 
@@ -38,9 +44,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plexSans.variable} ${plexMono.variable} ${instrumentSerif.variable}`}
+      className={`${geist.variable} ${geistMono.variable} ${fraunces.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {/* Aurora backdrop — soft color through the glass surfaces */}
+        <div className="aurora" aria-hidden />
+        <div className="grain-overlay" aria-hidden />
+        {children}
+      </body>
     </html>
   );
 }

@@ -4,6 +4,9 @@ import * as Sentry from "@sentry/nextjs";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN_FRONTEND;
 
+/* Instruments client-side route changes (Next 15+). */
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+
 if (dsn) {
   Sentry.init({
     dsn,

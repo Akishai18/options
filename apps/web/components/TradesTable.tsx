@@ -50,7 +50,7 @@ export function TradesTable({ trades }: Props) {
     return (
       <section className="space-y-3">
         <SectionLabel rule>trade log</SectionLabel>
-        <div className="rounded-md border border-dashed border-[var(--color-border)] px-5 py-6 text-center text-[13px] text-[var(--color-fg-muted)]">
+        <div className="glass-flat rounded-2xl px-5 py-6 text-center text-[13px] text-[var(--color-fg-muted)]">
           <span className="serif-italic">No trades — the entry rule never fired in this window.</span>
         </div>
       </section>
@@ -74,7 +74,7 @@ export function TradesTable({ trades }: Props) {
       </SectionLabel>
 
       {/* summary strip */}
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="best" value={pct(stats.bestReturn)} accent="up" />
         <Stat label="worst" value={pct(stats.worstReturn)} accent="down" />
         <Stat label="avg win" value={pct(stats.avgWin)} accent="up" />
@@ -85,7 +85,7 @@ export function TradesTable({ trades }: Props) {
         />
       </div>
 
-      <div className="overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="overflow-hidden rounded-2xl glass-flat">
         <div className="grid grid-cols-[1fr_60px_90px_90px_90px_70px_70px] gap-3 border-b border-[var(--color-border)] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-faint)]">
           <span>entry → exit</span>
           <span>side</span>
@@ -178,7 +178,7 @@ function Stat({
   accent?: "up" | "down";
 }) {
   return (
-    <div className="flex flex-col gap-1 bg-[var(--color-bg)] px-3 py-2.5">
+    <div className="glass-flat rounded-2xl flex flex-col gap-1 px-3.5 py-2.5">
       <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[var(--color-fg-faint)]">
         {label}
       </span>

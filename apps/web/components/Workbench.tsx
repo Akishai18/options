@@ -310,6 +310,13 @@ export function Workbench() {
         hasFreshResults={hasFreshResults}
         hasStrategy={!!activeVersion}
         status={status}
+        versions={versions}
+        activeVersionId={activeVersionId}
+        onSelectVersion={(id) => {
+          setActiveVersionId(id);
+          setCompareVersionId(null);
+          goToView("results");
+        }}
       />
       <div className="flex flex-1 flex-col overflow-hidden pb-[58px] md:pb-0">
         <Topbar
@@ -320,6 +327,18 @@ export function Workbench() {
           timeframe={headerTimeframe}
           status={status}
           viewingOlder={viewingOlder}
+          canCompare={versions.length >= 2}
+          onCompare={() => {
+            // Click "Compare" → activate the previous version as the compare partner
+            // and jump to results view.
+            if (versions.length < 2) return;
+            const others = versions.filter((v) => v.id !== activeVersionId);
+            const partner = others[others.length - 1];
+            if (partner) setCompareVersionId(partner.id);
+            goToView("results");
+          }}
+          canExport={!!activeVersion}
+          onExport={() => goToView("code")}
         />
         <main className="relative flex-1 overflow-hidden">
           <AnimatePresence mode="wait">
@@ -372,6 +391,8 @@ export function Workbench() {
                         critique={activeCritique}
                         critiqueLoading={activeCritiqueLoading}
                         loading={status === "running" && !activeVersion}
+                        strategy={activeSchema}
+                        versionLabel={headerVersionLabel}
                       />
                     )}
                   </div>

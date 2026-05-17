@@ -39,14 +39,30 @@ export function CritiqueCard({ text, loading }: Props) {
       className="space-y-3"
     >
       <SectionLabel rule>critique</SectionLabel>
-      <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <p className={`text-[14px] leading-[1.7] text-[var(--color-fg)] ${loading ? "cursor-blink" : ""}`}>
-          <span className="serif-italic float-left mr-1.5 mt-0 text-[36px] leading-[0.9] text-[var(--color-accent)]">
+      <div
+        className="relative glass rounded-2xl p-6 overflow-hidden"
+        style={{
+          boxShadow:
+            "inset 0 1px 0 0 oklch(1 0 0 / 0.12), inset 0 -1px 0 0 oklch(0 0 0 / 0.2), 0 10px 30px -12px oklch(0 0 0 / 0.5), 0 0 0 1px oklch(0.74 0.16 235 / 0.06)",
+        }}
+      >
+        {/* subtle accent wash from the top-left, behind text */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -left-12 -top-12 h-40 w-40 rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, oklch(0.74 0.16 235 / 0.18), transparent 70%)",
+            filter: "blur(20px)",
+          }}
+        />
+        <p className={`relative text-[14.5px] leading-[1.75] text-[var(--color-fg)] ${loading ? "cursor-blink" : ""}`}>
+          <span className="serif-italic float-left mr-1.5 mt-0 text-[42px] leading-[0.85] text-[var(--color-accent)]">
             {first}
           </span>
           {rest}
         </p>
-        <div className="mt-4 flex items-center gap-2 border-t border-[var(--color-border)] pt-3">
+        <div className="relative mt-5 flex items-center gap-2 border-t border-[var(--color-border)] pt-3">
           <span className={`h-1 w-1 rounded-full ${loading ? "bg-[var(--color-accent)] animate-pulse" : "bg-[var(--color-up)]"}`} />
           <span className="eyebrow text-[10px]">
             {loading ? "streaming critique…" : "grounded in computed metrics — no market reasoning"}

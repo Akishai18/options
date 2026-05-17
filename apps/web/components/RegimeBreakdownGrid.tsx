@@ -66,7 +66,7 @@ export function RegimeBreakdownGrid({ regime }: Props) {
         )}
       </div>
 
-      <div className="grid gap-px overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cells.map((cell) => (
           <RegimeCell
             key={cell.label}
@@ -97,7 +97,7 @@ function RegimeCell({
 }) {
   const meta = META[cell.label];
   return (
-    <div className="relative flex flex-col gap-2 bg-[var(--color-bg)] px-4 py-3.5">
+    <div className="relative glass-flat rounded-2xl flex flex-col gap-2 px-4 py-3.5">
       {isBest && (
         <span className="absolute right-3 top-3 h-1.5 w-1.5 rounded-full bg-[var(--color-up)] shadow-[0_0_8px_var(--color-up)]" />
       )}

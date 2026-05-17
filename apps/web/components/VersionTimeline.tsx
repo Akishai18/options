@@ -40,7 +40,7 @@ export function VersionTimeline({
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32 }}
-      className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/70 px-4 py-3 backdrop-blur md:px-7"
+      className="glass-soft px-4 py-3 md:px-7"
     >
       <div className="mb-2 flex items-baseline justify-between">
         <span className="eyebrow">version history</span>
@@ -73,13 +73,13 @@ export function VersionTimeline({
                 onSelect(v.id);
               }}
               className={cn(
-                "group relative flex shrink-0 flex-col gap-1 rounded-md border px-3 py-2 text-left transition-all",
-                "min-w-[180px] max-w-[260px]",
+                "group relative flex shrink-0 flex-col gap-1 rounded-2xl px-3.5 py-2.5 text-left transition-all duration-300",
+                "min-w-[200px] max-w-[280px] glass-sheen card-lift",
                 isActive
-                  ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]"
+                  ? "bg-[var(--color-accent-soft)] ring-1 ring-[var(--color-accent)]/50 shadow-[inset_0_1px_0_0_oklch(1_0_0/0.12),0_0_24px_-6px_oklch(0.74_0.16_235/0.35)]"
                   : isCompare
-                    ? "border-[var(--color-fg-muted)] bg-[var(--color-surface-2)]"
-                    : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]",
+                    ? "glass-flat-strong ring-1 ring-[var(--color-fg-muted)]/30"
+                    : "glass-flat hover:bg-[oklch(1_0_0/0.06)]",
               )}
             >
               <div className="flex items-baseline justify-between gap-2">

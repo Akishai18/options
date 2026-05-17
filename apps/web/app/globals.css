@@ -1,38 +1,53 @@
 @import "tailwindcss";
 
-/*  StratLab — research terminal palette                                  */
-/*  warm dark base · CRT-amber accent · finance-friendly green/red sparks */
+/*  StratLab — liquid-glass research workbench
+ *
+ *  Base:    blue-near-black.
+ *  Accent:  cyan/teal-shifted blue (one primary, no secondary warm).
+ *  Surfaces: translucent white + heavy backdrop-blur. Color leaks through
+ *            from the aurora gradients sitting behind everything. */
 
 @theme {
-  /* surfaces — warm-tinted, not pure black */
-  --color-bg: oklch(0.145 0.005 60);
-  --color-surface: oklch(0.18 0.006 60);
-  --color-surface-2: oklch(0.21 0.006 60);
-  --color-surface-3: oklch(0.24 0.007 60);
-  --color-border: oklch(0.27 0.005 60);
-  --color-border-strong: oklch(0.34 0.005 60);
+  /* base — deep, slightly blue */
+  --color-bg: oklch(0.135 0.012 250);
 
-  /* foreground */
-  --color-fg: oklch(0.93 0.005 60);
-  --color-fg-muted: oklch(0.66 0.005 60);
-  --color-fg-subtle: oklch(0.46 0.005 60);
-  --color-fg-faint: oklch(0.34 0.005 60);
+  /* translucent surfaces — sit ON TOP of the aurora backdrop with blur.
+     Don't use solid grays — let the glass pick up backdrop color. */
+  --color-surface:   oklch(1 0 0 / 0.04);
+  --color-surface-2: oklch(1 0 0 / 0.07);
+  --color-surface-3: oklch(1 0 0 / 0.10);
+  --color-border:        oklch(1 0 0 / 0.08);
+  --color-border-strong: oklch(1 0 0 / 0.16);
 
-  /* sole accent — CRT phosphor warmth */
-  --color-accent: oklch(0.78 0.13 75);
-  --color-accent-strong: oklch(0.83 0.15 80);
-  --color-accent-soft: oklch(0.78 0.13 75 / 0.18);
+  /* solid surface for opaque needs (chart panels, modals) */
+  --color-surface-solid: oklch(0.16 0.014 248);
 
-  /* finance signals */
-  --color-up: oklch(0.74 0.15 145);
-  --color-down: oklch(0.65 0.18 25);
-  --color-up-soft: oklch(0.74 0.15 145 / 0.15);
-  --color-down-soft: oklch(0.65 0.18 25 / 0.15);
+  /* foreground — softer whites against the deep blue */
+  --color-fg:        oklch(0.96 0.005 240);
+  --color-fg-muted:  oklch(0.68 0.012 240);
+  --color-fg-subtle: oklch(0.5  0.012 240);
+  --color-fg-faint:  oklch(0.38 0.012 240);
 
-  /* fonts (next/font sets the actual face via CSS variables) */
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", monospace;
-  --font-serif: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  /* primary — cyan-shifted blue (close to nvestiv's 0,153,255) */
+  --color-accent:        oklch(0.74 0.16 235);
+  --color-accent-strong: oklch(0.82 0.17 232);
+  --color-accent-deep:   oklch(0.55 0.18 252);
+  --color-accent-soft:   oklch(0.74 0.16 235 / 0.18);
+
+  /* warm sparingly — for AI-byline italics and a few accents */
+  --color-warm:      oklch(0.82 0.11 70);
+  --color-warm-soft: oklch(0.82 0.11 70 / 0.16);
+
+  /* finance signals — kept punchy */
+  --color-up:        oklch(0.78 0.16 155);
+  --color-down:      oklch(0.7  0.2  25);
+  --color-up-soft:   oklch(0.78 0.16 155 / 0.15);
+  --color-down-soft: oklch(0.7  0.2  25  / 0.15);
+
+  /* fonts */
+  --font-sans:  var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:  var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
 }
 
 * { border-color: var(--color-border); }
@@ -45,76 +60,183 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  letter-spacing: -0.005em;
 }
 
-/* atmospheric backdrop — barely-there grid that fades from center  */
-body::before {
-  content: "";
+/* aurora backdrop — large soft color blobs that the glass surfaces pick up.
+   These are intentionally lazy and don't move; the perceived motion comes
+   from glass surfaces shifting position over them. */
+.aurora {
   position: fixed;
-  inset: 0;
+  inset: -20%;
   pointer-events: none;
   z-index: -2;
-  background-image:
-    linear-gradient(to right, oklch(0.22 0.005 60 / 0.5) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(0.22 0.005 60 / 0.5) 1px, transparent 1px);
-  background-size: 64px 64px;
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 0%, transparent 80%);
-          mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 0%, transparent 80%);
+  background:
+    radial-gradient(40% 36% at 12% 18%, oklch(0.55 0.18 252 / 0.45), transparent 60%),
+    radial-gradient(34% 36% at 88% 10%, oklch(0.74 0.16 195 / 0.32), transparent 60%),
+    radial-gradient(36% 34% at 90% 92%, oklch(0.6  0.2  280 / 0.35), transparent 60%),
+    radial-gradient(36% 32% at 18% 88%, oklch(0.68 0.18 215 / 0.28), transparent 60%);
+  filter: blur(60px) saturate(1.05);
 }
 
-/* warm vignette glow at the top, like CRT bloom */
-body::after {
-  content: "";
+/* film grain — print-magazine texture at very low opacity */
+.grain-overlay {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: -1;
-  background:
-    radial-gradient(ellipse 70% 30% at 50% 0%, oklch(0.78 0.13 75 / 0.06), transparent 70%);
+  z-index: 1;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 200px 200px;
 }
 
-/* utility: tabular numerals — financial data needs columns to align */
+/* ----------- liquid-glass utilities ----------- */
+
+/* core glass surface — translucent + blur + inset top highlight.
+   This is the workhorse class. Use on cards, panels, navs, composer. */
+.glass {
+  background: oklch(1 0 0 / 0.04);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+          backdrop-filter: blur(22px) saturate(1.2);
+  border: 1px solid oklch(1 0 0 / 0.08);
+  /* The inset top highlight is what makes it read as glass — like a light
+     reflection off the top edge. */
+  box-shadow:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.12),
+    inset 0 -1px 0 0 oklch(0 0 0 / 0.2),
+    0 10px 30px -12px oklch(0 0 0 / 0.5);
+}
+.glass-soft {
+  background: oklch(1 0 0 / 0.03);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+          backdrop-filter: blur(14px) saturate(1.15);
+  border: 1px solid oklch(1 0 0 / 0.06);
+  box-shadow: inset 0 1px 0 0 oklch(1 0 0 / 0.08);
+}
+.glass-strong {
+  background: oklch(1 0 0 / 0.08);
+  -webkit-backdrop-filter: blur(32px) saturate(1.3);
+          backdrop-filter: blur(32px) saturate(1.3);
+  border: 1px solid oklch(1 0 0 / 0.12);
+  box-shadow:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.18),
+    inset 0 -1px 0 0 oklch(0 0 0 / 0.25),
+    0 18px 50px -20px oklch(0 0 0 / 0.55);
+}
+
+/* an opaque-ish glass for things that need to NOT have aurora bleed
+   through (e.g. chart bodies with a lot of overlapping lines) */
+.glass-opaque {
+  background: var(--color-surface-solid);
+  border: 1px solid oklch(1 0 0 / 0.08);
+  box-shadow: inset 0 1px 0 0 oklch(1 0 0 / 0.06);
+}
+
+/* glass-flat — the LOOK of glass (translucent bg + inset highlight + border)
+   without the GPU cost of backdrop-filter. Use for NESTED cards (chart
+   wrappers, metric tiles, trade rows) that sit inside an already-glass parent.
+   We reserve real backdrop-filter for top-level surfaces only. */
+.glass-flat {
+  background: oklch(1 0 0 / 0.03);
+  border: 1px solid oklch(1 0 0 / 0.07);
+  box-shadow:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.08),
+    inset 0 -1px 0 0 oklch(0 0 0 / 0.15);
+}
+.glass-flat-strong {
+  background: oklch(1 0 0 / 0.05);
+  border: 1px solid oklch(1 0 0 / 0.1);
+  box-shadow:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.12),
+    inset 0 -1px 0 0 oklch(0 0 0 / 0.2);
+}
+
+/* sheen — diagonal light streak that sweeps across on hover.
+   The single signature interaction that makes glass feel alive. */
+.glass-sheen { position: relative; overflow: hidden; }
+.glass-sheen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    oklch(1 0 0 / 0.06) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.glass-sheen:hover::before { transform: translateX(100%); }
+
+/* tabular numerals */
 .tabular { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
-/* small caps section labels — the magazine-y micro-headers */
+/* eyebrow — small-caps mono header */
 .eyebrow {
   font-family: var(--font-mono);
   font-size: 10.5px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--color-fg-muted);
   font-weight: 500;
 }
 
-/* italic serif emphasis — sparing, deliberate */
+/* display — Geist 700, tight, slightly negative tracking */
+.display {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.04;
+}
+
+/* italic accent — Fraunces, used SPARINGLY for editorial moments */
 .serif-italic {
   font-family: var(--font-serif);
   font-style: italic;
-  letter-spacing: -0.01em;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  font-variation-settings: "opsz" 18, "SOFT" 100, "WONK" 0;
+}
+.display-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  font-variation-settings: "opsz" 72, "SOFT" 80, "WONK" 1;
 }
 
-/* focus rings — match the accent */
+/* focus rings */
 :where(button, a, input, textarea, [role="button"]):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
-/* selection */
-::selection {
-  background: var(--color-accent-soft);
-  color: var(--color-fg);
-}
+::selection { background: var(--color-accent-soft); color: var(--color-fg); }
 
-/* scrollbars (webkit) */
+/* scrollbars */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-fg-faint); }
+::-webkit-scrollbar-thumb { background: oklch(1 0 0 / 0.12); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: oklch(1 0 0 / 0.22); }
 
-/* one-off keyframes  */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid oklch(1 0 0 / 0.1);
+  border-radius: 4px;
+  color: var(--color-fg-muted);
+  background: oklch(1 0 0 / 0.04);
+}
+
+/* ----------- keyframes ----------- */
+
 @keyframes phosphor-blink {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
+  50%      { opacity: 0.35; }
 }
 .cursor-blink::after {
   content: "▍";
@@ -123,35 +245,69 @@ body::after {
   animation: phosphor-blink 1.05s steps(1, end) infinite;
 }
 
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0   oklch(0.78 0.16 155 / 0.55); }
+  50%      { box-shadow: 0 0 0 6px oklch(0.78 0.16 155 / 0); }
+}
+.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
 }
 .shimmer {
   background: linear-gradient(
     90deg,
-    var(--color-surface) 0%,
-    var(--color-surface-2) 30%,
-    var(--color-surface) 60%
+    oklch(1 0 0 / 0.04) 0%,
+    oklch(1 0 0 / 0.08) 30%,
+    oklch(1 0 0 / 0.04) 60%
   );
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
 }
 
-@keyframes scan {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+@keyframes scope-sweep {
+  0%   { background-position: -100% 0; }
+  100% { background-position:  100% 0; }
+}
+.scope-line {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-accent) 50%, transparent 100%);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: scope-sweep 1.8s linear infinite;
+  box-shadow: 0 0 8px var(--color-accent-soft);
 }
 
-/* recharts tweaks for our theme */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+.animate-fade-up { animation: fade-up 600ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+
+/* card-lift — subtle hover */
+.card-lift {
+  transition: transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+              border-color 0.3s ease,
+              background-color 0.3s ease,
+              box-shadow 0.3s ease;
+  will-change: transform;
+}
+.card-lift:hover {
+  transform: translateY(-1px);
+}
+
+/* recharts theming */
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
-  stroke: var(--color-border) !important;
+  stroke: oklch(1 0 0 / 0.06) !important;
   stroke-dasharray: 2 4;
 }
 .recharts-text {
   font-family: var(--font-mono) !important;
   font-size: 10px !important;
   fill: var(--color-fg-subtle) !important;
+  font-feature-settings: "tnum" !important;
 }
 .recharts-tooltip-wrapper { outline: none !important; }

@@ -7,12 +7,14 @@ import { DrawdownChart } from "./DrawdownChart";
 import { CritiqueCard } from "./CritiqueCard";
 import { CostStressChart } from "./CostStressChart";
 import { RegimeBreakdownGrid } from "./RegimeBreakdownGrid";
+import { RobustnessPills } from "./RobustnessPills";
 import { SectionLabel } from "./SectionLabel";
 import { SensitivityHaloChart } from "./SensitivityHaloChart";
 import { WalkForwardChart } from "./WalkForwardChart";
 import { EmptyDashboard } from "./EmptyDashboard";
 import { TradesTable } from "./TradesTable";
-import type { BacktestResult } from "@/lib/types";
+import { fingerprint } from "@/lib/fingerprint";
+import type { BacktestResult, StrategySchema } from "@/lib/types";
 
 type Props = {
   result: BacktestResult | null;
@@ -21,6 +23,8 @@ type Props = {
   critique: string | null;
   critiqueLoading?: boolean;
   loading?: boolean;
+  strategy?: StrategySchema | null;
+  versionLabel?: string | null;
 };
 
 export function Dashboard({
@@ -30,6 +34,8 @@ export function Dashboard({
   critique,
   critiqueLoading,
   loading,
+  strategy,
+  versionLabel,
 }: Props) {
   if (loading) return <DashboardLoading />;
   if (!result) return <EmptyDashboard />;
@@ -37,6 +43,10 @@ export function Dashboard({
   // Default 60/20/20 split — match the backend's StrategySchema.Splits default.
   const trainFrac = 0.6;
   const valFrac = 0.2;
+
+  // Compact mono rendering of entry [→ exit] rules — distinctive header detail.
+  const entryGlyph = strategy?.entry ? fingerprint(strategy.entry) : null;
+  const exitGlyph = strategy?.exit ? fingerprint(strategy.exit) : null;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
@@ -46,16 +56,36 @@ export function Dashboard({
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="flex items-baseline justify-between border-b border-[var(--color-border)] pb-4"
+          className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-4 md:flex-row md:items-baseline md:justify-between"
         >
-          <div>
-            <p className="eyebrow mb-1.5">backtest result</p>
-            <h2 className="text-[20px] font-medium tracking-[-0.01em] text-[var(--color-fg)]">
+          <div className="min-w-0">
+            <p className="eyebrow mb-2">backtest result</p>
+            <h2 className="display text-[30px] md:text-[34px] text-[var(--color-fg)]">
               {result.schema_name}
-              <span className="serif-italic ml-2 text-[var(--color-fg-muted)]">— v1</span>
+              {versionLabel && (
+                <span className="display-italic ml-3 text-[var(--color-fg-muted)]">
+                  — {versionLabel}
+                </span>
+              )}
             </h2>
+            {(entryGlyph || exitGlyph) && (
+              <p className="mt-2 truncate font-mono text-[12px] text-[var(--color-fg-muted)]">
+                {entryGlyph && (
+                  <>
+                    <span className="text-[var(--color-fg-faint)]">entry</span>
+                    <span className="ml-1.5 text-[var(--color-accent)]">{entryGlyph}</span>
+                  </>
+                )}
+                {exitGlyph && (
+                  <>
+                    <span className="ml-3 text-[var(--color-fg-faint)]">exit</span>
+                    <span className="ml-1.5 text-[var(--color-fg-muted)]">{exitGlyph}</span>
+                  </>
+                )}
+              </p>
+            )}
           </div>
-          <div className="text-right font-mono text-[11px] text-[var(--color-fg-muted)]">
+          <div className="text-right font-mono text-[11px] text-[var(--color-fg-muted)] shrink-0">
             {asset && timeframe && (
               <div>
                 <span className="text-[var(--color-fg)]">{asset}</span>
@@ -68,6 +98,9 @@ export function Dashboard({
           </div>
         </motion.div>
 
+        {/* anti-overfit verdict pills — the single-glance summary */}
+        <RobustnessPills result={result} />
+
         {/* metrics — IS/OOS hero */}
         <MetricsStrip
           full={result.metrics_full}
@@ -79,7 +112,7 @@ export function Dashboard({
         {/* equity curve */}
         <section className="space-y-3">
           <SectionLabel rule>equity curve · strategy vs buy-and-hold</SectionLabel>
-          <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <div className="glass-flat rounded-2xl p-4">
             <EquityChart
               equity={result.equity_curve}
               benchmark={result.benchmark_curve}
@@ -102,7 +135,7 @@ export function Dashboard({
         {/* drawdown */}
         <section className="space-y-3">
           <SectionLabel rule>drawdown</SectionLabel>
-          <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <div className="glass-flat rounded-2xl p-4">
             <DrawdownChart drawdown={result.drawdown_curve} />
           </div>
         </section>

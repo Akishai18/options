@@ -161,7 +161,7 @@ function EquityTooltip({ active, payload }: { active?: boolean; payload?: TipPay
   const bench = payload.find((p) => p.dataKey === "benchmark")?.value;
   if (strat == null) return null;
   return (
-    <div className="rounded border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-3 py-2 font-mono text-[11px] shadow-lg">
+    <div className="rounded-xl glass px-3 py-2 font-mono text-[11px] shadow-lg">
       <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-[var(--color-fg-faint)]">
         {row.date}
       </div>

@@ -103,7 +103,7 @@ export function SensitivityHaloChart({
         </span>
       </div>
 
-      <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+      <div className="glass-flat rounded-2xl p-4">
         <div className="relative h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
@@ -269,7 +269,7 @@ function HaloTooltip({
   const widthAbs = row.hi - row.lo;
   const widthPct = row.base === 0 ? 0 : widthAbs / Math.abs(row.base);
   return (
-    <div className="rounded border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-3 py-2 font-mono text-[11px] shadow-lg">
+    <div className="rounded-xl glass px-3 py-2 font-mono text-[11px] shadow-lg">
       <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-[var(--color-fg-faint)]">
         {row.date}
       </div>

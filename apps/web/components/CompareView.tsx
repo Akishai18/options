@@ -41,7 +41,7 @@ export function CompareView({ a, b, onExit }: Props) {
           <button
             type="button"
             onClick={onExit}
-            className="inline-flex items-center gap-1.5 rounded border border-[var(--color-border)] px-3 py-1.5 font-mono text-[11.5px] text-[var(--color-fg-muted)] transition-colors hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg)]"
+            className="inline-flex items-center gap-1.5 rounded-full glass-soft px-3 py-1.5 font-mono text-[11.5px] text-[var(--color-fg-muted)] transition-all duration-200 hover:bg-[oklch(1_0_0/0.08)] hover:text-[var(--color-fg)]"
           >
             <X size={12} />
             exit compare
@@ -49,7 +49,7 @@ export function CompareView({ a, b, onExit }: Props) {
         </motion.div>
 
         {/* per-version prompt summary */}
-        <section className="grid gap-px overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2">
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <PromptCard v={a} accent={false} />
           <PromptCard v={b} accent />
         </section>
@@ -63,7 +63,7 @@ export function CompareView({ a, b, onExit }: Props) {
         {/* overlaid equity */}
         <section className="space-y-3">
           <SectionLabel rule>equity curves · overlay</SectionLabel>
-          <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <div className="glass-flat rounded-2xl p-4">
             <OverlayChart a={a} b={b} />
           </div>
         </section>
@@ -76,7 +76,10 @@ export function CompareView({ a, b, onExit }: Props) {
 
 function PromptCard({ v, accent }: { v: VersionEntry; accent: boolean }) {
   return (
-    <div className="bg-[var(--color-bg)] px-4 py-3.5">
+    <div className={cn(
+      "glass-flat rounded-2xl px-4 py-3.5",
+      accent && "ring-1 ring-[var(--color-accent)]/30",
+    )}>
       <div className="mb-1 flex items-center gap-2">
         <span
           className={cn(
@@ -116,7 +119,7 @@ function DeltaGrid({ a, b }: { a: VersionEntry; b: VersionEntry }) {
   ];
 
   return (
-    <div className="overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]">
+    <div className="overflow-hidden rounded-2xl glass-flat">
       <div className="grid grid-cols-[1fr_120px_120px_120px] gap-4 border-b border-[var(--color-border)] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-fg-faint)]">
         <span>metric</span>
         <span className="text-right">{a.label}</span>
@@ -154,7 +157,7 @@ function DeltaRow({ row, striped }: { row: Row; striped: boolean }) {
     <li
       className={cn(
         "grid grid-cols-[1fr_120px_120px_120px] items-baseline gap-4 px-4 py-2.5 font-mono text-[12.5px] tabular",
-        striped && "bg-[var(--color-bg)]",
+        striped && "bg-[oklch(1_0_0/0.02)]",
       )}
     >
       <span className="text-[var(--color-fg-muted)]">{row.label}</span>
@@ -286,7 +289,7 @@ function OverlayTooltip({
   const aVal = payload.find((p) => p.dataKey === "a")?.value;
   const bVal = payload.find((p) => p.dataKey === "b")?.value;
   return (
-    <div className="rounded border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-3 py-2 font-mono text-[11px] shadow-lg">
+    <div className="rounded-xl glass px-3 py-2 font-mono text-[11px] shadow-lg">
       <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-[var(--color-fg-faint)]">
         {row.date}
       </div>

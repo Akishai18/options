@@ -77,9 +77,9 @@ export function WalkForwardChart({ report }: Props) {
         </span>
       </div>
 
-      <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+      <div className="glass-flat rounded-2xl p-4">
         {/* aggregate strip */}
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded bg-[var(--color-border)] sm:grid-cols-4 mb-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-4">
           <Stat label="mean sharpe" value={num(report.mean_sharpe)} accent={report.mean_sharpe >= 0 ? "up" : "down"} />
           <Stat label="median sharpe" value={num(report.median_sharpe)} accent={report.median_sharpe >= 0 ? "up" : "down"} />
           <Stat label="stdev" value={num(report.sharpe_stdev)} accent="muted" />
@@ -153,7 +153,7 @@ function Stat({
   accent?: "up" | "down" | "muted";
 }) {
   return (
-    <div className="flex flex-col gap-1 bg-[var(--color-bg)] px-3 py-2.5">
+    <div className="glass-flat rounded-xl flex flex-col gap-1 px-3.5 py-2.5">
       <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[var(--color-fg-faint)]">
         {label}
       </span>
@@ -176,7 +176,7 @@ function FoldTooltip({ active, payload }: { active?: boolean; payload?: TipPaylo
   if (!active || !payload || payload.length === 0) return null;
   const r = payload[0].payload;
   return (
-    <div className="rounded border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-3 py-2 font-mono text-[11px] shadow-lg">
+    <div className="rounded-xl glass px-3 py-2 font-mono text-[11px] shadow-lg">
       <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-[var(--color-fg-faint)]">
         fold {r.label}
       </div>

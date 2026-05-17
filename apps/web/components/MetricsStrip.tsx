@@ -17,7 +17,7 @@ export function MetricsStrip({ full, train, test, benchmark }: Props) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
-      className="grid grid-cols-2 gap-px bg-[var(--color-border)] md:grid-cols-4"
+      className="grid grid-cols-2 gap-3 md:grid-cols-4"
     >
       <Stat
         label="Sharpe"
@@ -26,6 +26,7 @@ export function MetricsStrip({ full, train, test, benchmark }: Props) {
         test={test?.sharpe}
         bench={benchmark.sharpe}
         higherIsBetter
+        idx={0}
       />
       <Stat
         label="Total Return"
@@ -35,6 +36,7 @@ export function MetricsStrip({ full, train, test, benchmark }: Props) {
         bench={benchmark.total_return}
         format="pct"
         higherIsBetter
+        idx={1}
       />
       <Stat
         label="Max Drawdown"
@@ -44,10 +46,12 @@ export function MetricsStrip({ full, train, test, benchmark }: Props) {
         bench={benchmark.max_drawdown}
         format="pct"
         higherIsBetter // less-negative is better; we still color by delta direction
+        idx={2}
       />
       <Stat
         label="Trades · Win Rate"
         primary={`${full.num_trades}  ·  ${(full.win_rate * 100).toFixed(0)}%`}
+        idx={3}
       />
     </motion.div>
   );
@@ -61,6 +65,7 @@ type StatProps = {
   bench?: number | null;
   format?: "num" | "pct";
   higherIsBetter?: boolean;
+  idx?: number;
 };
 
 function Stat({
@@ -71,6 +76,7 @@ function Stat({
   bench,
   format = "num",
   higherIsBetter,
+  idx = 0,
 }: StatProps) {
   const fmt = (v: number | null | undefined) =>
     format === "pct" ? pct(v) : num(v);
@@ -80,10 +86,15 @@ function Stat({
   const goodDelta = higherIsBetter ? delta >= 0 : delta <= 0;
 
   return (
-    <div className="flex flex-col gap-2 bg-[var(--color-bg)] px-4 py-3">
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: 0.04 + idx * 0.04, ease: [0.22, 0.61, 0.36, 1] }}
+      className="glass-flat rounded-2xl px-4 py-3.5 flex flex-col gap-2"
+    >
       <span className="eyebrow">{label}</span>
       <div className="flex items-baseline gap-2">
-        <span className="tabular font-mono text-[22px] font-light leading-none text-[var(--color-fg)]">
+        <span className="tabular font-mono text-[26px] font-light leading-none text-[var(--color-fg)]">
           {primary}
         </span>
       </div>
@@ -121,6 +132,6 @@ function Stat({
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

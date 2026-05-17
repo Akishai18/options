@@ -25,28 +25,32 @@ export function ChatView({
 }: Props) {
   const isEmpty = messages.length === 0;
 
-  // Empty state: hero composer centered like ChatGPT/Claude landing.
+  /* Empty state: editorial cover spread. Wider container so the headline
+   * and methodology grid fill the workbench, not a narrow center column.
+   * Composer sticks to the bottom of the spread. */
   if (isEmpty) {
     return (
-      <div className="mx-auto flex h-full w-full max-w-[760px] flex-col px-4 md:px-6">
-        <div className="flex flex-1 flex-col justify-center pt-6">
+      <div className="flex h-full flex-col overflow-y-auto">
+        <div className="mx-auto w-full max-w-[1180px] flex-1 px-4 pt-8 pb-4 md:px-10 md:pt-12">
           <EmptyChat onPick={onSubmit} />
         </div>
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="pb-6"
+          transition={{ duration: 0.4, delay: 0.3 }}
+          className="sticky bottom-0 border-t border-[var(--color-border)] bg-[var(--color-bg)]/90 px-4 py-3 backdrop-blur md:px-10 md:py-4"
         >
-          <Composer onSubmit={onSubmit} disabled={busy} />
+          <div className="mx-auto w-full max-w-[1180px]">
+            <Composer onSubmit={onSubmit} disabled={busy} />
+          </div>
         </motion.div>
       </div>
     );
   }
 
-  // Active conversation: messages scroll, composer sticks to bottom.
+  /* Active conversation: tighter column, messages scroll, composer sticks. */
   return (
-    <div className="mx-auto flex h-full w-full max-w-[820px] flex-col">
+    <div className="mx-auto flex h-full w-full max-w-[860px] flex-col">
       <div className="flex-1 overflow-y-auto">
         <MessageList
           messages={messages}
